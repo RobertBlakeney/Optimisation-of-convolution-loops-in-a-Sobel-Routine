@@ -1,0 +1,15 @@
+
+Multiple images at once.
+(just parse an array dumbass)
+
+Different dimensions
+(need to read file dimension preperties before allocating data)????
+
+Record IOPs and discover most computationally expensive routines
+(write code for time IOPs. Use accurate clock)
+
+Record with Register blocking
+
+Record with vectorisation
+
+Upload to github. todo today.

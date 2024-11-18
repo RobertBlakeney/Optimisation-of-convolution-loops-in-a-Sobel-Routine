@@ -1,0 +1,26 @@
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Project1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  canny.cpp
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(10,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(10,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(16,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(112,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(80,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(72,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(72,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(82,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(142,6): warning C4101: 'newAngle': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(140,6): warning C4101: 'Gy': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(137,6): warning C4101: 'rowOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(143,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(136,18): warning C4101: 'row': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(138,6): warning C4101: 'colOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(139,6): warning C4101: 'Gx': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(136,23): warning C4101: 'col': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(145,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\canny.cpp(141,8): warning C4101: 'thisAngle': unreferenced local variable
+  main.cpp
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\main.cpp(7,6): warning C4101: 'out': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\main.cpp(7,14): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Project1\Project1\main.cpp(7,11): warning C4101: 'i': unreferenced local variable
+  Generating Code...
+  Project1.vcxproj -> C:\Users\Robert\Documents\Uni\3000\Project\Project1\x64\Debug\3000 - Optimisation.exe
