@@ -12,4 +12,34 @@ Record with Register blocking
 
 Record with vectorisation
 
-Upload to github. todo today.
+
+
+
+//initialize the image
+	for (i = 0; i < N; i++)
+		for (j = 0; j < M; j++)
+			print[i][j] = 0;
+
+	read_image(IN, frame1);
+
+
+	GaussianBlur();
+	   	  	
+
+	for (i = 0; i < N; i++)
+		for (j = 0; j < M; j++)
+			print[i][j] = filt[i][j];
+
+	write_image(OUT_NAME1, print);
+
+	Sobel();
+
+
+
+	/* write gradient to image*/
+
+	for (i = 0; i < N; i++)
+		for (j = 0; j < M; j++)
+			print[i][j] = gradient[i][j];
+
+	write_image(OUT_NAME2, print);

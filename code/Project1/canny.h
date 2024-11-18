@@ -11,6 +11,7 @@
 #include <iostream>
 #include <immintrin.h>
 
+using namespace std;
 
 static unsigned char **frame1;
 static unsigned char **print;
@@ -26,16 +27,16 @@ static char OUT_NAME4[] = "out4.pgm";
 #define M 1024
 
 
-int image_detection();
+int image_detection(const char* input_files[], const char* output_files1[], const char* output_files2[], int num_images);
 
 
 //void write_acc(char* filename, int angl);
 //void read_frame(char filename[80], unsigned char image[N][M]);
-void read_image(char filename[], unsigned char **image);
-void Gausian_blur();
+void read_image(const char filename[], unsigned char **image);
+void GaussianBlur();
 void Sobel();
 void write_image(char *filename, unsigned char **image);
-void openfile(char *filename, FILE** finput);
+void openfile(const char *filename, FILE** finput);
 int getint(FILE *fp);
 
 

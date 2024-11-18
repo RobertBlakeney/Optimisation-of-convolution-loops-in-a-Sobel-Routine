@@ -129,7 +129,7 @@ void Sobel() {
 }
 
 
-int image_detection() {
+int image_detection(const char* inn[], const char* out1[], const char* out2[], int imgNo) {
 
 
 	int i, j;
@@ -163,36 +163,38 @@ int image_detection() {
 		if (print[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
 	}
 
-	//initialize the image
-	for (i = 0; i < N; i++)
-		for (j = 0; j < M; j++)
-			print[i][j] = 0;
+	for (int img = 0; img < imgNo; img++) 
+	{
 
-	read_image(IN, frame1);
+		//initialize the image
+		for (i = 0; i < N; i++)
+			for (j = 0; j < M; j++)
+				print[i][j] = 0;
 
-
-	GaussianBlur();
-	   	  	
-
-	for (i = 0; i < N; i++)
-		for (j = 0; j < M; j++)
-			print[i][j] = filt[i][j];
-
-	write_image(OUT_NAME1, print);
-
-	Sobel();
+		read_image(inn[img], frame1);
 
 
-
-	/* write gradient to image*/
-
-	for (i = 0; i < N; i++)
-		for (j = 0; j < M; j++)
-			print[i][j] = gradient[i][j];
-
-	write_image(OUT_NAME2, print);
+		GaussianBlur();
 
 
+		for (i = 0; i < N; i++)
+			for (j = 0; j < M; j++)
+				print[i][j] = filt[i][j];
+
+		write_image(OUT_NAME1, print);
+
+		Sobel();
+
+
+
+		/* write gradient to image*/
+
+		for (i = 0; i < N; i++)
+			for (j = 0; j < M; j++)
+				print[i][j] = gradient[i][j];
+
+		write_image(OUT_NAME2, print);
+	}
 
 	for (i = 0; i < N; i++)
 		free(frame1[i]);
@@ -212,7 +214,7 @@ int image_detection() {
 
 
 
-void read_image(char filename[], unsigned char **image)
+void read_image(const char filename[], unsigned char **image)
 {
 	int inint = -1;
 	int c;
@@ -290,7 +292,7 @@ void write_image(char* filename, unsigned char **image)
 
 
 
-void openfile(char *filename, FILE** finput)
+void openfile(const char *filename, FILE** finput)
 {
 	int x0, y0;
 	errno_t err;
