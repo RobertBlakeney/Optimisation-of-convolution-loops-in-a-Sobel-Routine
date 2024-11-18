@@ -10,6 +10,7 @@
 #include <chrono>
 #include <iostream>
 #include <immintrin.h>
+#include <utility>
 
 using namespace std;
 
@@ -35,8 +36,8 @@ int image_detection(const char* input_files[], const char* output_files1[], cons
 void read_image(const char filename[], unsigned char **image);
 void GaussianBlur();
 void Sobel();
-void write_image(char *filename, unsigned char **image);
-void openfile(const char *filename, FILE** finput);
+void write_image(const char *filename, unsigned char **image);
+std::pair<int, int> openfile(const char *filename, FILE** finput);
 int getint(FILE *fp);
 
 

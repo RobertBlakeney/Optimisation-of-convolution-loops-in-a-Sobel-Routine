@@ -3,6 +3,8 @@
 unsigned char filt[N][M], gradient[N][M], grad2[N][M], edgeDir[N][M];
 unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
+int width, height = 0;
+
 
 
 void GaussianBlur() {
@@ -133,7 +135,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 
 	int i, j;
-	unsigned int    row, col;
+	unsigned int row, col;
 	int rowOffset;
 	int colOffset;
 	int Gx;
@@ -145,34 +147,36 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 	unsigned char temp;
 
 
-
 	/*---------------------- create the image  -----------------------------------*/
-	frame1 = (unsigned char**)malloc(N * sizeof(unsigned char *));
-	if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
-	for (i = 0; i < N; i++) {
-		frame1[i] = (unsigned char*)malloc(M * sizeof(unsigned char));
-		if (frame1[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
-	}
 
-
-	//create the image
-	print = (unsigned char**)malloc(N * sizeof(unsigned char *));
-	if (print == NULL) { printf("\nerror with malloc fr"); return -1; }
-	for (i = 0; i < N; i++) {
-		print[i] = (unsigned char*)malloc(M * sizeof(unsigned char));
-		if (print[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
-	}
 
 	for (int img = 0; img < imgNo; img++) 
 	{
+		FILE *finput;
+		auto data = openfile(inn[img], &finput);
+
+		frame1 = (unsigned char**)malloc(data.first * sizeof(unsigned char*));
+		if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
+		for (i = 0; i < N; i++) {
+			frame1[i] = (unsigned char*)malloc(data.second * sizeof(unsigned char));
+			if (frame1[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
+		}
+
+
+		//create the image
+		print = (unsigned char**)malloc(data.first * sizeof(unsigned char*));
+		if (print == NULL) { printf("\nerror with malloc fr"); return -1; }
+		for (i = 0; i < N; i++) {
+			print[i] = (unsigned char*)malloc(data.second * sizeof(unsigned char));
+			if (print[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
+		}
 
 		//initialize the image
-		for (i = 0; i < N; i++)
-			for (j = 0; j < M; j++)
+		for (i = 0; i < data.first; i++)
+			for (j = 0; j < data.second; j++)
 				print[i][j] = 0;
 
 		read_image(inn[img], frame1);
-
 
 		GaussianBlur();
 
@@ -181,7 +185,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 			for (j = 0; j < M; j++)
 				print[i][j] = filt[i][j];
 
-		write_image(OUT_NAME1, print);
+		write_image(out1[img], print);
 
 		Sobel();
 
@@ -193,10 +197,20 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 			for (j = 0; j < M; j++)
 				print[i][j] = gradient[i][j];
 
-		write_image(OUT_NAME2, print);
+		write_image(out2[img], print);
+
+		for (i = 0; i < N; i++)
+			free(frame1[i]);
+		free(frame1);
+
+
+
+		for (i = 0; i < N; i++)
+			free(print[i]);
+		free(print);
 	}
 
-	for (i = 0; i < N; i++)
+	/*for (i = 0; i < N; i++)
 		free(frame1[i]);
 	free(frame1);
 
@@ -204,7 +218,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 	for (i = 0; i < N; i++)
 		free(print[i]);
-	free(print);
+	free(print);*/
 
 
 	return 0;
@@ -246,15 +260,16 @@ void read_image(const char filename[], unsigned char **image)
 		 }
 	   }*/
 
-	fclose(finput);
+	
 
+	fclose(finput);
 }
 
 
 
 
 
-void write_image(char* filename, unsigned char **image)
+void write_image(const char* filename, unsigned char **image)
 {
 	FILE* foutput;
 	errno_t err;
@@ -292,7 +307,7 @@ void write_image(char* filename, unsigned char **image)
 
 
 
-void openfile(const char *filename, FILE** finput)
+std::pair<int, int> openfile(const char *filename, FILE** finput)
 {
 	int x0, y0;
 	errno_t err;
@@ -315,18 +330,13 @@ void openfile(const char *filename, FILE** finput)
 	x0 = getint(*finput);
 	y0 = getint(*finput);
 
+	//if ((x0 != M) || (y0 != N)) {
+	//	printf("Image dimensions do not match: %ix%i expected\n", N, M);
+	//	exit(-1);
+	//}
 
-
-
-
-	if ((x0 != M) || (y0 != N)) {
-		printf("Image dimensions do not match: %ix%i expected\n", N, M);
-		exit(-1);
-	}
-
-	x0 = getint(*finput); /* read and throw away the range info */
-
-
+	//x0 = getint(*finput); /* read and throw away the range info */
+	return { x0, y0 };
 }
 
 
