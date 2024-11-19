@@ -1,6 +1,7 @@
 #include "canny.h"
-
-unsigned char filt[N][M], gradient[N][M], grad2[N][M], edgeDir[N][M];
+//19 refs to N and M
+//unsigned char filt[N][M], gradient[N][M], grad2[N][M], edgeDir[N][M]; //5 3 0 2
+vector<vector<int>> f, g, eD;
 unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
@@ -51,8 +52,8 @@ void GaussianBlur() {
 	gaussianMask[4][4] = 2;
 
 	/*---------------------- Gaussian Blur ---------------------------------*/
-	for (row = 2; row < N - 2; row++) {
-		for (col = 2; col < M - 2; col++) {
+	for (row = 2; row < width - 2; row++) {
+		for (col = 2; col < height - 2; col++) {
 			newPixel = 0;
 			for (rowOffset = -2; rowOffset <= 2; rowOffset++) {
 				for (colOffset = -2; colOffset <= 2; colOffset++) {
@@ -60,7 +61,7 @@ void GaussianBlur() {
 					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][2 + colOffset];
 				}
 			}
-			filt[row][col] = (unsigned char)(newPixel / 159);
+			f[row][col] = (unsigned char)(newPixel / 159);
 		}
 	}
 
@@ -84,6 +85,8 @@ void Sobel() {
 	unsigned char temp;
 
 
+
+
 	/* Declare Sobel masks */
 	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
 	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
@@ -94,8 +97,8 @@ void Sobel() {
 	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
 
 	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
-	for (row = 1; row < N - 1; row++) {
-		for (col = 1; col < M - 1; col++) {
+	for (row = 1; row < width - 1; row++) {
+		for (col = 1; col < height - 1; col++) {
 
 			Gx = 0;
 			Gy = 0;
@@ -104,12 +107,12 @@ void Sobel() {
 			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
 				for (colOffset = -1; colOffset <= 1; colOffset++) {
 
-					Gx += filt[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1];
-					Gy += filt[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1];
+					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1];
+					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1];
 				}
 			}
 
-			gradient[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
 
 			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
 
@@ -124,7 +127,7 @@ void Sobel() {
 				newAngle = 135;
 
 
-			edgeDir[row][col] = newAngle;
+			eD[row][col] = newAngle;
 		}
 	}
 
@@ -154,10 +157,16 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 	{
 		FILE *finput;
 		auto data = openfile(inn[img], &finput);
+		width = data.first;
+		height = data.second;
+
+		f.resize(width, vector<int>(height));
+		g.resize(width, vector<int>(height));
+		eD.resize(width, vector<int>(height));
 
 		frame1 = (unsigned char**)malloc(data.first * sizeof(unsigned char*));
 		if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
-		for (i = 0; i < N; i++) {
+		for (i = 0; i < width; i++) {
 			frame1[i] = (unsigned char*)malloc(data.second * sizeof(unsigned char));
 			if (frame1[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
 		}
@@ -166,7 +175,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 		//create the image
 		print = (unsigned char**)malloc(data.first * sizeof(unsigned char*));
 		if (print == NULL) { printf("\nerror with malloc fr"); return -1; }
-		for (i = 0; i < N; i++) {
+		for (i = 0; i < width; i++) {
 			print[i] = (unsigned char*)malloc(data.second * sizeof(unsigned char));
 			if (print[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
 		}
@@ -181,9 +190,9 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 		GaussianBlur();
 
 
-		for (i = 0; i < N; i++)
-			for (j = 0; j < M; j++)
-				print[i][j] = filt[i][j];
+		for (i = 0; i < width; i++)
+			for (j = 0; j < height; j++)
+				print[i][j] = f[i][j];
 
 		write_image(out1[img], print);
 
@@ -193,19 +202,19 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 		/* write gradient to image*/
 
-		for (i = 0; i < N; i++)
-			for (j = 0; j < M; j++)
-				print[i][j] = gradient[i][j];
+		for (i = 0; i < width; i++)
+			for (j = 0; j < height; j++)
+				print[i][j] = g[i][j];
 
 		write_image(out2[img], print);
 
-		for (i = 0; i < N; i++)
+		for (i = 0; i < width; i++)
 			free(frame1[i]);
 		free(frame1);
 
 
 
-		for (i = 0; i < N; i++)
+		for (i = 0; i < width; i++)
 			free(print[i]);
 		free(print);
 	}
@@ -240,8 +249,8 @@ void read_image(const char filename[], unsigned char **image)
 	openfile(filename, &finput);
 
 
-	for (j = 0; j < N; j++)
-		for (i = 0; i < M; i++) {
+	for (j = 0; j < width; j++)
+		for (i = 0; i < height; i++) {
 			c = getc(finput);
 
 
@@ -283,15 +292,15 @@ void write_image(const char* filename, unsigned char **image)
 	}
 
 	fprintf(foutput, "P2\n");
-	fprintf(foutput, "%d %d\n", M, N);
+	fprintf(foutput, "%d %d\n", height, width);
 	fprintf(foutput, "%d\n", 255);
 
-	for (j = 0; j < N; ++j) {
-		for (i = 0; i < M; ++i) {
+	for (j = 0; j < width; ++j) {
+		for (i = 0; i < height; ++i) {
 			fprintf(foutput, "%3d ", image[j][i]);
 			if (i % 32 == 31) fprintf(foutput, "\n");
 		}
-		if (M % 32 != 0) fprintf(foutput, "\n");
+		if (height % 32 != 0) fprintf(foutput, "\n");
 	}
 	fclose(foutput);
 
