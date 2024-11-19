@@ -14,6 +14,7 @@
 #include <vector>
 
 using namespace std;
+using namespace std::chrono;
 
 static unsigned char **frame1;
 static unsigned char **print;

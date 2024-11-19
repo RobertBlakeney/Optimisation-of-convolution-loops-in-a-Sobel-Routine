@@ -1,45 +1,6 @@
-
-Multiple images at once.
-(just parse an array dumbass)
-
-Different dimensions
-(need to read file dimension preperties before allocating data)????
-
 Record IOPs and discover most computationally expensive routines
-(write code for time IOPs. Use accurate clock)
+(write code for time IOPs.
 
 Record with Register blocking
 
 Record with vectorisation
-
-
-
-
-//initialize the image
-	for (i = 0; i < N; i++)
-		for (j = 0; j < M; j++)
-			print[i][j] = 0;
-
-	read_image(IN, frame1);
-
-
-	GaussianBlur();
-	   	  	
-
-	for (i = 0; i < N; i++)
-		for (j = 0; j < M; j++)
-			print[i][j] = filt[i][j];
-
-	write_image(OUT_NAME1, print);
-
-	Sobel();
-
-
-
-	/* write gradient to image*/
-
-	for (i = 0; i < N; i++)
-		for (j = 0; j < M; j++)
-			print[i][j] = gradient[i][j];
-
-	write_image(OUT_NAME2, print);
