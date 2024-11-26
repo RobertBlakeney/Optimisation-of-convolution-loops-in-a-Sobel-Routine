@@ -1,6 +1,5 @@
-Record IOPs and discover most computationally expensive routines
-(write code for time IOPs.
+﻿
+	51×(width−4)×(height−4)
+	39×(width−2)×(height−2)
 
-Record with Register blocking
-
-Record with vectorisation
+	imgNo*(21*((width−2)*(height−2)) + 51*((width−4)*(height−4)))

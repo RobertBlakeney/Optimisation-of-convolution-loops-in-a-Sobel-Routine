@@ -1,5 +1,28 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Project1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  main.cpp
-C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\main.cpp(6,9): warning C4101: 'j': unreferenced local variable
-C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\main.cpp(6,6): warning C4101: 'i': unreferenced local variable
+  canny.cpp
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(29,12): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(11,9): warning C4101: 'j': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(11,6): warning C4101: 'i': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(90,20): warning C4018: '<': signed/unsigned mismatch
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(91,21): warning C4018: '<': signed/unsigned mismatch
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(48,9): warning C4101: 'j': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(48,6): warning C4101: 'i': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(54,16): warning C4101: 'temp': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(135,20): warning C4018: '<': signed/unsigned mismatch
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(136,21): warning C4018: '<': signed/unsigned mismatch
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(152,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(118,6): warning C4101: 'newPixel': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(110,9): warning C4101: 'j': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(110,6): warning C4101: 'i': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(120,16): warning C4101: 'temp': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(182,6): warning C4101: 'newAngle': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(180,6): warning C4101: 'Gy': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(177,6): warning C4101: 'rowOffset': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(183,6): warning C4101: 'newPixel': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(176,15): warning C4101: 'row': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(178,6): warning C4101: 'colOffset': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(179,6): warning C4101: 'Gx': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(176,20): warning C4101: 'col': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(185,16): warning C4101: 'temp': unreferenced local variable
+C:\pro\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(181,8): warning C4101: 'thisAngle': unreferenced local variable
   Project1.vcxproj -> C:\pro\Optimisation-of-code-for-specified-harware\code\x64\Debug\3000 - Optimisation.exe

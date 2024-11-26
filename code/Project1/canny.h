@@ -28,6 +28,7 @@ static char OUT_NAME4[] = "out4.pgm";
 
 //#define N 1024
 //#define M 1024
+extern int width, height;
 
 
 int image_detection(const char* input_files[], const char* output_files1[], const char* output_files2[], int num_images);

@@ -6,6 +6,41 @@ unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
 
+int main() {
+
+	int i, j;
+	const char* inList[] = { "input/rec.pgm", "input/rec2.pgm", "input/rec3.pgm" };
+	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm" };
+	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm" };
+	int imgNo = 3;
+
+	// use of high res clock for accurate timing
+	typedef std::chrono::high_resolution_clock timer;
+
+	auto s = timer::now();
+
+	image_detection(inList, outListG, outListS, imgNo);
+
+	auto e = timer::now();
+
+	int w = width;
+	int h = height;
+
+	float iop = imgNo * (39*((w-2) * (h-2))) + (51*((w-4)*(h-4)));
+
+	auto time = duration_cast<microseconds>(e - s);
+	float fTime = (float)time.count() / 1000000;
+
+	float iops = iop / fTime;
+	float giops = iops / 1000000000;
+
+	cout << "\nTime: " << fTime << "s" << endl;
+	cout << "\nGIOPs: " << giops << endl;
+
+	system("pause");
+	return 0;
+}
+
 
 
 void GaussianBlur() {
@@ -58,10 +93,10 @@ void GaussianBlur() {
 			for (rowOffset = -2; rowOffset <= 2; rowOffset++) {
 				for (colOffset = -2; colOffset <= 2; colOffset++) {
 
-					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][2 + colOffset];
+					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][2 + colOffset];  // 2 ops
 				}
 			}
-			f[row][col] = (unsigned char)(newPixel / 159);
+			f[row][col] = (unsigned char)(newPixel / 159);  // 1 ops
 		}
 	}
 
@@ -107,12 +142,12 @@ void Sobel() {
 			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
 				for (colOffset = -1; colOffset <= 1; colOffset++) {
 
-					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1];
-					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1];
+					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
 				}
 			}
 
-			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
 
 			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
 
@@ -155,6 +190,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 	for (int img = 0; img < imgNo; img++) 
 	{
+		//We run this par of the code to get the dimensions of the image to resize arrays for the program to work
 		FILE *finput;
 		auto data = openfile(inn[img], &finput);
 		width = data.first;
@@ -164,6 +200,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 		g.resize(width, vector<int>(height));
 		eD.resize(width, vector<int>(height));
 
+		//consider using realloc for better dynamic us of memory
 		frame1 = (unsigned char**)malloc(data.first * sizeof(unsigned char*));
 		if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
 		for (i = 0; i < width; i++) {
@@ -235,9 +272,12 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 }
 
 
+#pragma region MyRegion
 
 
-void read_image(const char filename[], unsigned char **image)
+
+
+void read_image(const char filename[], unsigned char **image) // 0 ops
 {
 	int inint = -1;
 	int c;
@@ -278,7 +318,7 @@ void read_image(const char filename[], unsigned char **image)
 
 
 
-void write_image(const char* filename, unsigned char **image)
+void write_image(const char* filename, unsigned char **image) //0 ops
 {
 	FILE* foutput;
 	errno_t err;
@@ -308,15 +348,7 @@ void write_image(const char* filename, unsigned char **image)
 }
 
 
-
-
-
-
-
-
-
-
-std::pair<int, int> openfile(const char *filename, FILE** finput)
+std::pair<int, int> openfile(const char *filename, FILE** finput) //3 ops
 {
 	int x0, y0;
 	errno_t err;
@@ -396,3 +428,4 @@ int getint(FILE *fp) /* adapted from "xv" source code */
 	}
 	return i;
 }
+#pragma endregion
