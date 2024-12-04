@@ -217,7 +217,8 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 		read_image(inn[img], frame1);
 
 		auto sg = timer::now();
-		GaussianBlur();
+		//GaussianBlur();
+		GaussianBlurUnroll();
 		auto eg = timer::now();
 
 
@@ -228,7 +229,8 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 		write_image(out1[img], print);
 
 		auto ss = timer::now();
-		Sobel();
+		//Sobel();
+		SobelUnroll();
 		auto es = timer::now();
 
 		/* write gradient to image*/
@@ -428,4 +430,140 @@ int getint(FILE *fp) /* adapted from "xv" source code */
 	}
 	return i;
 }
+#pragma endregion
+
+#pragma region unrollmethods
+
+void GaussianBlurUnroll() {
+
+	int i, j;
+	unsigned int    row, col;
+	int rowOffset;
+	int colOffset;
+	int newPixel;
+
+	unsigned char temp;
+
+
+	/* Declare Gaussian mask */
+	gaussianMask[0][0] = 2;
+
+	gaussianMask[0][1] = 4;
+	gaussianMask[0][2] = 5;
+	gaussianMask[0][3] = 4;
+	gaussianMask[0][4] = 2;
+
+	gaussianMask[1][0] = 4;
+	gaussianMask[1][1] = 9;
+	gaussianMask[1][2] = 12;
+	gaussianMask[1][3] = 9;
+	gaussianMask[1][4] = 4;
+
+	gaussianMask[2][0] = 5;
+	gaussianMask[2][1] = 12;
+	gaussianMask[2][2] = 15;
+	gaussianMask[2][3] = 12;
+	gaussianMask[2][4] = 5;
+
+	gaussianMask[3][0] = 4;
+	gaussianMask[3][1] = 9;
+	gaussianMask[3][2] = 12;
+	gaussianMask[3][3] = 9;
+	gaussianMask[3][4] = 4;
+
+	gaussianMask[4][0] = 2;
+	gaussianMask[4][1] = 4;
+	gaussianMask[4][2] = 5;
+	gaussianMask[4][3] = 4;
+	gaussianMask[4][4] = 2;
+
+	/*---------------------- Gaussian Blur ---------------------------------*/
+	for (row = 2; row < width - 2; row++) {
+		for (col = 2; col < height - 2; col++) {
+			newPixel = 0;
+			for (rowOffset = -2; rowOffset <= 2; rowOffset++) {
+				for (colOffset = -2; colOffset <= 2; colOffset += 5)
+					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][0]; // 2 ops
+				newPixel += frame1[row + rowOffset][col + colOffset + 1] * gaussianMask[2 + rowOffset][1];
+				newPixel += frame1[row + rowOffset][col + colOffset + 2] * gaussianMask[2 + rowOffset][2];
+				newPixel += frame1[row + rowOffset][col + colOffset + 3] * gaussianMask[2 + rowOffset][3];
+				newPixel += frame1[row + rowOffset][col + colOffset + 4] * gaussianMask[2 + rowOffset][4];
+			}
+			f[row][col] = (unsigned char)(newPixel / 159);  // 1 ops
+		}
+	}
+
+
+}
+
+
+void SobelUnroll() {
+
+
+	int i, j;
+	unsigned int    row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle = 0;
+	int newPixel;
+
+	unsigned char temp;
+
+
+
+
+	/* Declare Sobel masks */
+	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
+	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
+	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
+
+	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
+	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
+	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	for (row = 1; row < width - 1; row++) {
+		for (col = 1; col < height - 1; col++) {
+
+			Gx = 0;
+			Gy = 0;
+
+			/* Calculate the sum of the Sobel mask times the nine surrounding pixels in the x and y direction */
+			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
+				for (colOffset = -1; colOffset <= 1; colOffset += 3) {
+
+					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][0]; // 2 ops
+					Gx += f[row + rowOffset][col + colOffset + 1] * GxMask[rowOffset + 1][1];
+					Gx += f[row + rowOffset][col + colOffset + 2] * GxMask[rowOffset + 1][2];
+
+					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][0]; // 2 ops
+					Gy += f[row + rowOffset][col + colOffset + 1] * GyMask[rowOffset + 1][1];
+					Gy += f[row + rowOffset][col + colOffset + 2] * GyMask[rowOffset + 1][2];
+				}
+			}
+
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
+
+			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
+
+			/* Convert actual edge direction to approximate value */
+			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+				newAngle = 0;
+			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+				newAngle = 45;
+			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+				newAngle = 90;
+			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+				newAngle = 135;
+
+
+			eD[row][col] = newAngle;
+		}
+	}
+
+}
+
 #pragma endregion

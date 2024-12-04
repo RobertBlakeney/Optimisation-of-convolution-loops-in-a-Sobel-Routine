@@ -43,6 +43,10 @@ void write_image(const char *filename, unsigned char **image);
 std::pair<int, int> openfile(const char *filename, FILE** finput);
 int getint(FILE *fp);
 
+void GaussianBlurUnroll();
+void SobelUnroll();
+
+
 
 
 //void printt(int tem, int i, int j, int max1, int max2);
