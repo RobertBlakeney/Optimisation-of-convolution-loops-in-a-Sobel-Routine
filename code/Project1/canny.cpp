@@ -5,36 +5,27 @@ vector<vector<int>> f, g, eD;
 unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
+float fulltime = 0;
+
+// use of high res clock for accurate timing
+typedef std::chrono::high_resolution_clock timer;
 
 int main() {
 
 	int i, j;
-	const char* inList[] = { "input/rec.pgm", "input/rec2.pgm", "input/rec3.pgm" };
-	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm" };
-	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm" };
-	int imgNo = 3;
-
-	// use of high res clock for accurate timing
-	typedef std::chrono::high_resolution_clock timer;
-
-	auto s = timer::now();
+	const char* inList[] = { "input/rec.pgm", "input/rec2.pgm", "input/rec3.pgm", "input/rec4.pgm", "input/rec5.pgm", "input/rec6.pgm", "input/rec7.pgm", "input/rec8.pgm", "input/rec9.pgm", "input/rec10.pgm" };
+	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm", "output/out4G.pgm", "output/out5G.pgm", "output/out6G.pgm", "output/out7G.pgm", "output/out8G.pgm", "output/out9G.pgm", "output/out10G.pgm" };
+	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm", "output/out4S.pgm", "output/out5S.pgm", "output/out6S.pgm", "output/out7S.pgm", "output/out8S.pgm", "output/out9S.pgm", "output/out10S.pgm" };
+	int imgNo = 10;
 
 	image_detection(inList, outListG, outListS, imgNo);
 
-	auto e = timer::now();
-
-	int w = width;
-	int h = height;
-
-	float iop = imgNo * (39*((w-2) * (h-2))) + (51*((w-4)*(h-4)));
-
-	auto time = duration_cast<microseconds>(e - s);
-	float fTime = (float)time.count() / 1000000;
-
-	float iops = iop / fTime;
+	float iop = imgNo * (39 * ((width - 2) * (height - 2))) + (51 * ((width - 4) * (height - 4)));
+	float iops = iop / fulltime;
 	float giops = iops / 1000000000;
 
-	cout << "\nTime: " << fTime << "s" << endl;
+	cout << "\nTime of all images: " << fulltime;
+
 	cout << "\nGIOPs: " << giops << endl;
 
 	system("pause");
@@ -92,7 +83,6 @@ void GaussianBlur() {
 			newPixel = 0;
 			for (rowOffset = -2; rowOffset <= 2; rowOffset++) {
 				for (colOffset = -2; colOffset <= 2; colOffset++) {
-
 					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][2 + colOffset];  // 2 ops
 				}
 			}
@@ -181,6 +171,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 	float thisAngle;
 	int newAngle;
 	int newPixel;
+	
 
 	unsigned char temp;
 
@@ -196,9 +187,10 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 		width = data.first;
 		height = data.second;
 
-		f.resize(width, vector<int>(height));
-		g.resize(width, vector<int>(height));
-		eD.resize(width, vector<int>(height));
+		f = vector<vector<int>>(width, vector<int>(height));
+		g = vector<vector<int>>(width, vector<int>(height));
+		eD = vector<vector<int>>(width, vector<int>(height));
+
 
 		//consider using realloc for better dynamic us of memory
 		frame1 = (unsigned char**)malloc(data.first * sizeof(unsigned char*));
@@ -224,7 +216,9 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 		read_image(inn[img], frame1);
 
+		auto sg = timer::now();
 		GaussianBlur();
+		auto eg = timer::now();
 
 
 		for (i = 0; i < width; i++)
@@ -233,9 +227,9 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 		write_image(out1[img], print);
 
+		auto ss = timer::now();
 		Sobel();
-
-
+		auto es = timer::now();
 
 		/* write gradient to image*/
 
@@ -244,6 +238,12 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 				print[i][j] = g[i][j];
 
 		write_image(out2[img], print);
+
+		auto time = duration_cast<microseconds>((eg - sg) + (es - ss));
+		float fTime = (float)time.count() / 1000000;
+		fulltime += fTime;
+
+		//cout << endl << "Time: " << fTime << "\n" << endl; //check time of individual image
 
 		for (i = 0; i < width; i++)
 			free(frame1[i]);
@@ -272,7 +272,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 }
 
 
-#pragma region MyRegion
+#pragma region fileMan
 
 
 
