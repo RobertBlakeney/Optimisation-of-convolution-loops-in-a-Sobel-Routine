@@ -5,7 +5,8 @@ vector<vector<int>> f, g, eD;
 unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
-float fulltime = 0;
+float fulltimeG = 0;
+float fulltimeS = 0;
 
 // use of high res clock for accurate timing
 typedef std::chrono::high_resolution_clock timer;
@@ -16,17 +17,18 @@ int main() {
 	const char* inList[] = { "input/rec.pgm", "input/rec2.pgm", "input/rec3.pgm", "input/rec4.pgm", "input/rec5.pgm", "input/rec6.pgm", "input/rec7.pgm", "input/rec8.pgm", "input/rec9.pgm", "input/rec10.pgm" };
 	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm", "output/out4G.pgm", "output/out5G.pgm", "output/out6G.pgm", "output/out7G.pgm", "output/out8G.pgm", "output/out9G.pgm", "output/out10G.pgm" };
 	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm", "output/out4S.pgm", "output/out5S.pgm", "output/out6S.pgm", "output/out7S.pgm", "output/out8S.pgm", "output/out9S.pgm", "output/out10S.pgm" };
-	int imgNo = 10;
+	int imgNo = 1;
 
 	image_detection(inList, outListG, outListS, imgNo);
 
-	float iop = imgNo * (39 * ((width - 2) * (height - 2))) + (51 * ((width - 4) * (height - 4)));
-	float iops = iop / fulltime;
-	float giops = iops / 1000000000;
+	long pixelS = imgNo * ((width - 2) * (height - 2));
 
-	cout << "\nTime of all images: " << fulltime;
+	float ppsS = pixelS / fulltimeS;
+	float GppsS = ppsS / 1000000000;
 
-	cout << "\nGIOPs: " << giops << endl;
+	cout << "\nTotal time to process sobel mask: " << fulltimeS << endl;
+
+	cout << "\nGpps of sobel mask: " << GppsS << endl;
 
 	system("pause");
 	return 0;
@@ -171,19 +173,20 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 	float thisAngle;
 	int newAngle;
 	int newPixel;
-	
+
 
 	unsigned char temp;
+
 
 
 	/*---------------------- create the image  -----------------------------------*/
 
 
-	for (int img = 0; img < imgNo; img++) 
+	for (int img = 0; img < imgNo; img++)
 	{
 		//We run this par of the code to get the dimensions of the image to resize arrays for the program to work
-		FILE *finput;
-		auto data = openfile(inn[img], &finput);
+		FILE* finput;
+		auto data = openfile(inn[selImg], &finput);
 		width = data.first;
 		height = data.second;
 
@@ -214,23 +217,25 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 			for (j = 0; j < data.second; j++)
 				print[i][j] = 0;
 
-		read_image(inn[img], frame1);
+		read_image(inn[selImg], frame1);
 
-		auto sg = timer::now();
-		//GaussianBlur();
-		GaussianBlurUnroll();
-		auto eg = timer::now();
+		GaussianBlur();
 
 
 		for (i = 0; i < width; i++)
 			for (j = 0; j < height; j++)
 				print[i][j] = f[i][j];
 
-		write_image(out1[img], print);
+		write_image(out1[selImg], print);
 
 		auto ss = timer::now();
 		//Sobel();
-		SobelUnroll();
+		//SobelUnroll();
+		//SobelUnroll_2Factor_RegBlocking();
+		//SobelTiling_32();
+		//SobelAvx();
+		//SobelOpenmp();
+		SobelOpenmpSimd();
 		auto es = timer::now();
 
 		/* write gradient to image*/
@@ -239,13 +244,12 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 			for (j = 0; j < height; j++)
 				print[i][j] = g[i][j];
 
-		write_image(out2[img], print);
+		write_image(out2[selImg], print);
 
-		auto time = duration_cast<microseconds>((eg - sg) + (es - ss));
-		float fTime = (float)time.count() / 1000000;
-		fulltime += fTime;
-
-		//cout << endl << "Time: " << fTime << "\n" << endl; //check time of individual image
+		auto timeS = duration_cast<microseconds>(es - ss);
+		float fTimeS = (float)timeS.count() / 1000000;
+		fulltimeS += fTimeS;
+		//cout << endl << "Time: " << fTimeG or fTimeS << "\n" << endl; //To check time of individual image
 
 		for (i = 0; i < width; i++)
 			free(frame1[i]);
@@ -279,11 +283,11 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 
 
-void read_image(const char filename[], unsigned char **image) // 0 ops
+void read_image(const char filename[], unsigned char** image) // 0 ops
 {
 	int inint = -1;
 	int c;
-	FILE *finput;
+	FILE* finput;
 	int i, j;
 
 	printf("  Reading image from disk (%s)...\n", filename);
@@ -311,7 +315,7 @@ void read_image(const char filename[], unsigned char **image) // 0 ops
 		 }
 	   }*/
 
-	
+
 
 	fclose(finput);
 }
@@ -320,7 +324,7 @@ void read_image(const char filename[], unsigned char **image) // 0 ops
 
 
 
-void write_image(const char* filename, unsigned char **image) //0 ops
+void write_image(const char* filename, unsigned char** image) //0 ops
 {
 	FILE* foutput;
 	errno_t err;
@@ -350,7 +354,7 @@ void write_image(const char* filename, unsigned char **image) //0 ops
 }
 
 
-std::pair<int, int> openfile(const char *filename, FILE** finput) //3 ops
+std::pair<int, int> openfile(const char* filename, FILE** finput) //3 ops
 {
 	int x0, y0;
 	errno_t err;
@@ -383,7 +387,7 @@ std::pair<int, int> openfile(const char *filename, FILE** finput) //3 ops
 }
 
 
-int getint(FILE *fp) /* adapted from "xv" source code */
+int getint(FILE* fp) /* adapted from "xv" source code */
 {
 	int c, i, firstchar, garbage;
 
@@ -396,7 +400,7 @@ int getint(FILE *fp) /* adapted from "xv" source code */
 		/* eat comments */
 		if (c == '#') {
 			/* if we're at a comment, read to end of line */
-			char cmt[256], *sp;
+			char cmt[256], * sp;
 
 			sp = cmt;  firstchar = 1;
 			while (1) {
@@ -426,78 +430,15 @@ int getint(FILE *fp) /* adapted from "xv" source code */
 		i = (i * 10) + (c - '0');
 		c = getc(fp);
 		if (c == EOF) return i;
-		if (c<'0' || c>'9') break;
+		if (c < '0' || c>'9') break;
 	}
 	return i;
 }
 #pragma endregion
 
-#pragma region unrollmethods
+#pragma region OptMethods
 
-void GaussianBlurUnroll() {
-
-	int i, j;
-	unsigned int    row, col;
-	int rowOffset;
-	int colOffset;
-	int newPixel;
-
-	unsigned char temp;
-
-
-	/* Declare Gaussian mask */
-	gaussianMask[0][0] = 2;
-
-	gaussianMask[0][1] = 4;
-	gaussianMask[0][2] = 5;
-	gaussianMask[0][3] = 4;
-	gaussianMask[0][4] = 2;
-
-	gaussianMask[1][0] = 4;
-	gaussianMask[1][1] = 9;
-	gaussianMask[1][2] = 12;
-	gaussianMask[1][3] = 9;
-	gaussianMask[1][4] = 4;
-
-	gaussianMask[2][0] = 5;
-	gaussianMask[2][1] = 12;
-	gaussianMask[2][2] = 15;
-	gaussianMask[2][3] = 12;
-	gaussianMask[2][4] = 5;
-
-	gaussianMask[3][0] = 4;
-	gaussianMask[3][1] = 9;
-	gaussianMask[3][2] = 12;
-	gaussianMask[3][3] = 9;
-	gaussianMask[3][4] = 4;
-
-	gaussianMask[4][0] = 2;
-	gaussianMask[4][1] = 4;
-	gaussianMask[4][2] = 5;
-	gaussianMask[4][3] = 4;
-	gaussianMask[4][4] = 2;
-
-	/*---------------------- Gaussian Blur ---------------------------------*/
-	for (row = 2; row < width - 2; row++) {
-		for (col = 2; col < height - 2; col++) {
-			newPixel = 0;
-			for (rowOffset = -2; rowOffset <= 2; rowOffset++) {
-				for (colOffset = -2; colOffset <= 2; colOffset += 5)
-					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][0]; // 2 ops
-				newPixel += frame1[row + rowOffset][col + colOffset + 1] * gaussianMask[2 + rowOffset][1];
-				newPixel += frame1[row + rowOffset][col + colOffset + 2] * gaussianMask[2 + rowOffset][2];
-				newPixel += frame1[row + rowOffset][col + colOffset + 3] * gaussianMask[2 + rowOffset][3];
-				newPixel += frame1[row + rowOffset][col + colOffset + 4] * gaussianMask[2 + rowOffset][4];
-			}
-			f[row][col] = (unsigned char)(newPixel / 159);  // 1 ops
-		}
-	}
-
-
-}
-
-
-void SobelUnroll() {
+void SobelUnroll() { //A simple unroll of the innermost loops
 
 
 	int i, j;
@@ -531,17 +472,360 @@ void SobelUnroll() {
 			Gx = 0;
 			Gy = 0;
 
+			Gx += f[row - 1][col - 1] * GxMask[0][0];
+			Gx += f[row - 1][col] * GxMask[0][1];
+			Gx += f[row - 1][col + 1] * GxMask[0][2];
+
+			Gx += f[row][col - 1] * GxMask[1][0];
+			Gx += f[row][col] * GxMask[1][1];
+			Gx += f[row][col + 1] * GxMask[1][2];
+
+			Gx += f[row + 1][col - 1] * GxMask[2][0];
+			Gx += f[row + 1][col] * GxMask[2][1];
+			Gx += f[row + 1][col + 1] * GxMask[2][2];
+
+
+			Gy += f[row - 1][col - 1] * GyMask[0][0];
+			Gy += f[row - 1][col] * GyMask[0][1];
+			Gy += f[row - 1][col + 1] * GyMask[0][2];
+
+			Gy += f[row][col - 1] * GyMask[1][0];
+			Gy += f[row][col] * GyMask[1][1];
+			Gy += f[row][col + 1] * GyMask[1][2];
+
+			Gy += f[row + 1][col - 1] * GyMask[2][0];
+			Gy += f[row + 1][col] * GyMask[2][1];
+			Gy += f[row + 1][col + 1] * GyMask[2][2];
+
+
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
+
+			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
+
+			/* Convert actual edge direction to approximate value */
+			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+				newAngle = 0;
+			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+				newAngle = 45;
+			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+				newAngle = 90;
+			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+				newAngle = 135;
+
+
+			eD[row][col] = newAngle;
+		}
+	}
+
+}
+
+void SobelUnroll_2Factor_RegBlocking() { //Preforms small factor register blocking
+
+
+	int i, j;
+	unsigned int    row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx, Gx2;
+	int Gy, Gy2;
+	float thisAngle, thisAngle2;
+	int newAngle = 0;
+	int newPixel;
+
+	unsigned char temp;
+
+
+
+
+	/* Declare Sobel masks */
+	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
+	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
+	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
+
+	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
+	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
+	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	for (row = 1; row < width - 1; row++) {
+		Gx = 0, Gx2 = 0, Gy = 0, Gy2 = 0;
+		for (col = 1; col < height - 1; col += 2) {
+
+
+			Gx += f[row - 1][col - 1] * GxMask[0][0];
+			Gx += f[row - 1][col] * GxMask[0][1];
+			Gx += f[row - 1][col + 1] * GxMask[0][2];
+
+			Gx += f[row][col - 1] * GxMask[1][0];
+			Gx += f[row][col] * GxMask[1][1];
+			Gx += f[row][col + 1] * GxMask[1][2];
+
+			Gx += f[row + 1][col - 1] * GxMask[2][0];
+			Gx += f[row + 1][col] * GxMask[2][1];
+			Gx += f[row + 1][col + 1] * GxMask[2][2];
+
+			Gx2 += f[row - 1][col] * GxMask[0][0];
+			Gx2 += f[row - 1][col + 1] * GxMask[0][1];
+			Gx2 += f[row - 1][col + 2] * GxMask[0][2];
+
+			Gx2 += f[row][col] * GxMask[1][0];
+			Gx2 += f[row][col + 1] * GxMask[1][1];
+			Gx2 += f[row][col + 2] * GxMask[1][2];
+
+			Gx2 += f[row + 1][col] * GxMask[2][0];
+			Gx2 += f[row + 1][col + 1] * GxMask[2][1];
+			Gx2 += f[row + 1][col + 2] * GxMask[2][2];
+
+
+			Gy += f[row - 1][col - 1] * GyMask[0][0];
+			Gy += f[row - 1][col] * GyMask[0][1];
+			Gy += f[row - 1][col + 1] * GyMask[0][2];
+
+			Gy += f[row][col - 1] * GyMask[1][0];
+			Gy += f[row][col] * GyMask[1][1];
+			Gy += f[row][col + 1] * GyMask[1][2];
+
+			Gy += f[row + 1][col - 1] * GyMask[2][0];
+			Gy += f[row + 1][col] * GyMask[2][1];
+			Gy += f[row + 1][col + 1] * GyMask[2][2];
+
+			Gy2 += f[row - 1][col] * GyMask[0][0];
+			Gy2 += f[row - 1][col + 1] * GyMask[0][1];
+			Gy2 += f[row - 1][col + 2] * GyMask[0][2];
+
+			Gy2 += f[row][col] * GyMask[1][0];
+			Gy2 += f[row][col + 1] * GyMask[1][1];
+			Gy2 += f[row][col + 2] * GyMask[1][2];
+
+			Gy2 += f[row + 1][col] * GyMask[2][0];
+			Gy2 += f[row + 1][col + 1] * GyMask[2][1];
+			Gy2 += f[row + 1][col + 2] * GyMask[2][2];
+
+
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
+			g[row][col+1] = (unsigned char)(sqrt(Gx2 * Gx2 + Gy2 * Gy2));  // 3 ops
+
+			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
+			thisAngle2 = (((atan2(Gx2, Gy2)) / 3.14159) * 180.0);
+
+			/* Convert actual edge direction to approximate value */
+			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+				newAngle = 0;
+			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+				newAngle = 45;
+			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+				newAngle = 90;
+			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+				newAngle = 135;
+
+
+			eD[row][col] = newAngle;
+		}
+	}
+
+}
+
+void SobelTiling_32() { //Preforms tiling on a block size of 32
+
+
+	int i, j;
+	unsigned int    row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle = 0;
+	int newPixel;
+
+	unsigned char temp;
+
+
+
+
+	/* Declare Sobel masks */
+	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
+	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
+	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
+
+	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
+	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
+	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	const int tileSize = 32;
+
+	for (int tileRow = 1; tileRow < width - 1; tileRow += tileSize)
+		for (int tileCol = 1; tileCol < height - 1; tileCol += tileSize) {
+
+			//ensure no out of bounds
+			int rowEnd = (tileRow + tileSize < width - 1) ? tileRow + tileSize : width - 1;
+			int colEnd = (tileCol + tileSize < width - 1) ? tileCol + tileSize : width - 1;
+
+			for (row = tileRow; row < rowEnd; row++) {
+				for (col = tileCol; col < colEnd; col++) {
+
+					Gx = 0;
+					Gy = 0;
+
+					for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
+						for (colOffset = -1; colOffset <= 1; colOffset++) {
+							Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+							Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
+						}
+					}
+
+
+					g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
+
+					thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
+
+					/* Convert actual edge direction to approximate value */
+					if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+						newAngle = 0;
+					else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+						newAngle = 45;
+					else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+						newAngle = 90;
+					else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+						newAngle = 135;
+
+
+					eD[row][col] = newAngle;
+				}
+			}
+
+		}
+
+}
+
+void SobelAvx() { // USes avx registers to compute 8 values at a time
+
+
+	int i, j;
+	int row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle;
+	int newPixel;
+
+	unsigned char temp;
+
+	/* Declare Sobel masks */
+
+	alignas(32) int gxMask[3][3] = {
+		{-1, 0, 1},
+		{-2, 0, 2},
+		{-1, 0, 1}
+	};
+
+	alignas(32) int gyMask[3][3] = {
+	{-1, -2, -1},
+	{0, 0, 0},
+	{1, 2, 1}
+	};
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+
+	for (row = 1; row < width - 1; ++row) {
+		for (col = 1; col < height - 1; col += 8) {
+			__m256i Gx = _mm256_setzero_si256();
+			__m256i Gy = _mm256_setzero_si256();
+
+			for (int rowOffset = -1; rowOffset <= 1; ++rowOffset) {
+				for (int colOffset = -1; colOffset <= 1; ++colOffset) {
+					alignas(32) int tempPixels[8];
+					for (int i = 0; i < 8; ++i)
+						if (col + colOffset + i < width)
+							tempPixels[i] = f[row + rowOffset][col + colOffset + i];
+
+					__m256i pixels = _mm256_load_si256((__m256i*)tempPixels);
+
+					__m256i GxMask = _mm256_set1_epi32(gxMask[rowOffset + 1][colOffset + 1]);
+					__m256i GyMask = _mm256_set1_epi32(gyMask[rowOffset + 1][colOffset + 1]);
+
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+				}
+			}
+
+			__m256i gradient = _mm256_add_epi32(_mm256_abs_epi32(Gx), _mm256_abs_epi32(Gy));
+
+			alignas(32) int result[8];
+			alignas(32) int gx[8];
+			alignas(32) int gy[8];
+
+			_mm256_store_si256((__m256i*)result, gradient);
+			_mm256_store_si256((__m256i*)gx, Gx);
+			_mm256_store_si256((__m256i*)gy, Gy);
+
+			for (int i = 0; i < 8; ++i) {
+				if (col + i < width)
+					g[row][col + i] = result[i];
+
+				float thisAngle = (atan2(gx[i], gy[i]) / 3.14159f) * 180.0f;
+
+				if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+					newAngle = 0;
+				else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+					newAngle = 45;
+				else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+					newAngle = 90;
+				else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+					newAngle = 135;
+				if (col + i < width)
+					eD[row][col + i] = newAngle;
+			}
+		}
+	}
+
+}
+
+void SobelOpenmp() { // uses openmp to parallelize the routine
+
+
+	int i, j;
+	int    row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle = 0;
+	int newPixel;
+
+	unsigned char temp;
+
+
+
+
+	/* Declare Sobel masks */
+	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
+	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
+	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
+
+	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
+	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
+	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	#pragma omp parallel for private(row, col, rowOffset, colOffset, Gx, Gy, thisAngle, newAngle) shared(f, g, eD, GxMask, GyMask)
+	for (row = 1; row < width - 1; row++) {
+		for (col = 1; col < height - 1; col++) {
+
+			Gx = 0;
+			Gy = 0;
+
 			/* Calculate the sum of the Sobel mask times the nine surrounding pixels in the x and y direction */
 			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
-				for (colOffset = -1; colOffset <= 1; colOffset += 3) {
+				for (colOffset = -1; colOffset <= 1; colOffset++) {
 
-					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][0]; // 2 ops
-					Gx += f[row + rowOffset][col + colOffset + 1] * GxMask[rowOffset + 1][1];
-					Gx += f[row + rowOffset][col + colOffset + 2] * GxMask[rowOffset + 1][2];
-
-					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][0]; // 2 ops
-					Gy += f[row + rowOffset][col + colOffset + 1] * GyMask[rowOffset + 1][1];
-					Gy += f[row + rowOffset][col + colOffset + 2] * GyMask[rowOffset + 1][2];
+					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
 				}
 			}
 
@@ -565,5 +849,71 @@ void SobelUnroll() {
 	}
 
 }
+
+void SobelOpenmpSimd() { // uses openmp to parallelize the routine (Needs gcc compiler)
+
+
+	int i, j;
+	int    row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle = 0;
+	int newPixel;
+
+	unsigned char temp;
+
+
+	/* Declare Sobel masks */
+	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
+	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
+	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
+
+	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
+	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
+	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	#pragma omp parallel for private(row, col, rowOffset, colOffset, Gx, Gy, thisAngle, newAngle) shared(f, g, eD, GxMask, GyMask)
+	for (row = 1; row < width - 1; row++) {
+		#pragma omp simd private(colOffset, rowOffset, Gx, Gy)
+		for (col = 1; col < height - 1; col++) {
+
+			Gx = 0;
+			Gy = 0;
+
+			/* Calculate the sum of the Sobel mask times the nine surrounding pixels in the x and y direction */
+			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
+				for (colOffset = -1; colOffset <= 1; colOffset++) {
+
+					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
+				}
+			}
+
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
+
+			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
+
+			/* Convert actual edge direction to approximate value */
+			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+				newAngle = 0;
+			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+				newAngle = 45;
+			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+				newAngle = 90;
+			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+				newAngle = 135;
+
+
+			eD[row][col] = newAngle;
+		}
+	}
+
+}
+
 
 #pragma endregion

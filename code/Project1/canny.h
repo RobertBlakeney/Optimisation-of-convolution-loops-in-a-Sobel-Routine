@@ -12,6 +12,7 @@
 #include <immintrin.h>
 #include <utility>
 #include <vector>
+#include <omp.h>
 
 using namespace std;
 using namespace std::chrono;
@@ -28,6 +29,7 @@ static char OUT_NAME4[] = "out4.pgm";
 
 //#define N 1024
 //#define M 1024
+#define selImg 0
 extern int width, height;
 
 
@@ -43,10 +45,12 @@ void write_image(const char *filename, unsigned char **image);
 std::pair<int, int> openfile(const char *filename, FILE** finput);
 int getint(FILE *fp);
 
-void GaussianBlurUnroll();
 void SobelUnroll();
-
-
+void SobelUnroll_2Factor_RegBlocking();
+void SobelTiling_32();
+void SobelAvx();
+void SobelOpenmp();
+void SobelOpenmpSimd();
 
 
 //void printt(int tem, int i, int j, int max1, int max2);

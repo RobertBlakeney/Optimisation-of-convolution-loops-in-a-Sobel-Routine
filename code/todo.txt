@@ -1,5 +1,7 @@
-﻿
-	51×(width−4)×(height−4)
-	39×(width−2)×(height−2)
-
-	imgNo*(21*((width−2)*(height−2)) + 51*((width−4)*(height−4)))
+﻿All cpu routines
+	//unroll
+	//loop tiling 
+	//register blocking
+	//avx intrinsics
+	//openmp
+	//openmp simd
