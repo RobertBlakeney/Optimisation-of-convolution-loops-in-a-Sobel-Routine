@@ -1,5 +1,7 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Project1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   canny.cpp
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(26,7): warning C4215: nonstandard extension used: long float
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(27,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(16,9): warning C4101: 'j': unreferenced local variable
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(16,6): warning C4101: 'i': unreferenced local variable
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(83,20): warning C4018: '<': signed/unsigned mismatch
@@ -24,47 +26,52 @@ C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specifie
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(168,20): warning C4101: 'col': unreferenced local variable
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(178,16): warning C4101: 'temp': unreferenced local variable
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(173,8): warning C4101: 'thisAngle': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(469,20): warning C4018: '<': signed/unsigned mismatch
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(470,21): warning C4018: '<': signed/unsigned mismatch
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(503,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(446,6): warning C4101: 'rowOffset': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(452,6): warning C4101: 'newPixel': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(447,6): warning C4101: 'colOffset': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(444,9): warning C4101: 'j': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(444,6): warning C4101: 'i': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(454,16): warning C4101: 'temp': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(550,20): warning C4018: '<': signed/unsigned mismatch
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(552,21): warning C4018: '<': signed/unsigned mismatch
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(608,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(609,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(527,6): warning C4101: 'rowOffset': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(533,6): warning C4101: 'newPixel': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(528,6): warning C4101: 'colOffset': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(525,9): warning C4101: 'j': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(525,6): warning C4101: 'i': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(535,16): warning C4101: 'temp': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(665,28): warning C4018: '<': signed/unsigned mismatch
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(666,29): warning C4018: '<': signed/unsigned mismatch
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(681,47): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(639,6): warning C4101: 'newPixel': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(631,9): warning C4101: 'j': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(631,6): warning C4101: 'i': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(641,16): warning C4101: 'temp': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(769,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(710,6): warning C4101: 'Gy': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(707,6): warning C4101: 'rowOffset': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(713,6): warning C4101: 'newPixel': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(708,6): warning C4101: 'colOffset': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(705,9): warning C4101: 'j': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(705,6): warning C4101: 'i': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(709,6): warning C4101: 'Gx': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(715,16): warning C4101: 'temp': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(711,8): warning C4101: 'thisAngle': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(834,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(798,6): warning C4101: 'newPixel': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(790,9): warning C4101: 'j': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(790,6): warning C4101: 'i': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(800,16): warning C4101: 'temp': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(787,6): warning C4101: 'row': unreferenced local variable
-C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(884,15): error C7660: 'simd': requires '-openmp:experimental' command line option(s)
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(471,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(472,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(505,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(448,6): warning C4101: 'rowOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(454,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(449,6): warning C4101: 'colOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(446,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(446,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(456,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(552,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(554,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(610,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(611,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(529,6): warning C4101: 'rowOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(535,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(530,6): warning C4101: 'colOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(527,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(527,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(537,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(667,28): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(668,29): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(683,47): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(641,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(633,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(633,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(643,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(771,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(712,6): warning C4101: 'Gy': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(709,6): warning C4101: 'rowOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(715,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(710,6): warning C4101: 'colOffset': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(707,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(707,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(711,6): warning C4101: 'Gx': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(717,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(713,8): warning C4101: 'thisAngle': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(836,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(800,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(792,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(792,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(802,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(789,6): warning C4101: 'row': unreferenced local variable
 C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(901,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(866,6): warning C4101: 'newPixel': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(858,9): warning C4101: 'j': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(858,6): warning C4101: 'i': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(868,16): warning C4101: 'temp': unreferenced local variable
+C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\Project1\canny.cpp(855,6): warning C4101: 'row': unreferenced local variable
+  Project1.vcxproj -> C:\Users\Robert\Documents\Uni\3000\Project\Git\Optimisation-of-code-for-specified-harware\code\x64\Debug\3000 - Optimisation.exe

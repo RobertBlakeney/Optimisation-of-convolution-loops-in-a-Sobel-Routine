@@ -29,7 +29,7 @@ static char OUT_NAME4[] = "out4.pgm";
 
 //#define N 1024
 //#define M 1024
-#define selImg 0
+#define selImg 5
 extern int width, height;
 
 
