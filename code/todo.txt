@@ -1,7 +1,5 @@
-﻿All cpu routines
-	//unroll
-	//loop tiling 
-	//register blocking
-	//avx intrinsics
-	//openmp
-	//openmp simd
+﻿2 cpu routines
+
+data collection with absolute values
+
+setup gpu project

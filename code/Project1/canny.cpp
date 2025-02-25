@@ -14,12 +14,11 @@ typedef std::chrono::high_resolution_clock timer;
 int main() {
 
 	int i, j;
-	const char* inList[] = { "input/100x100.pgm", "input/256x256.pgm", "input/512x640.pgm", "input/1024x1024.pgm", "input/1536x1920.pgm", "input/5014x3342.pgm"};
+	const char* inList[] = { "input/100x100.pgm", "input/256x256.pgm", "input/512x512.pgm", "input/1024x1024.pgm", "input/2048x2048.pgm", "input/4096x4096.pgm"};
 	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm", "output/out4G.pgm", "output/out5G.pgm", "output/out6G.pgm"};
 	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm", "output/out4S.pgm", "output/out5S.pgm", "output/out6S.pgm"};
-	int imgNo = 50;
 
-	image_detection(inList, outListG, outListS, imgNo);
+	image_detection(inList, outListG, outListS);
 
 	long long int pixelS = imgNo * ((width - 2) * (height - 2));
 
@@ -161,7 +160,7 @@ void Sobel() {
 }
 
 
-int image_detection(const char* inn[], const char* out1[], const char* out2[], int imgNo) {
+int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 
 
 	int i, j;
@@ -177,102 +176,85 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 	unsigned char temp;
 
+	//We run this part of the code to get the dimensions of the image to resize arrays for the program to work
+	FILE* finput;
+	auto data = openfile(inn[selImg], &finput);
+	height = data.first;
+	width = data.second;
+
+	f = vector<vector<int>>(width, vector<int>(height));
+	g = vector<vector<int>>(width, vector<int>(height));
+	eD = vector<vector<int>>(width, vector<int>(height));
 
 
-	/*---------------------- create the image  -----------------------------------*/
-
-
-	for (int img = 0; img < 1; img++)
-	{
-		//We run this par of the code to get the dimensions of the image to resize arrays for the program to work
-		FILE* finput;
-		auto data = openfile(inn[selImg], &finput);
-		height = data.first;
-		width = data.second;
-
-		f = vector<vector<int>>(width, vector<int>(height));
-		g = vector<vector<int>>(width, vector<int>(height));
-		eD = vector<vector<int>>(width, vector<int>(height));
-
-
-		//consider using realloc for better dynamic us of memory
-		frame1 = (unsigned char**)malloc(width * sizeof(unsigned char*));
-		if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
-		for (i = 0; i < width; i++) {
-			frame1[i] = (unsigned char*)malloc(height * sizeof(unsigned char));
-			if (frame1[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
-		}
-
-
-		//create the image
-		print = (unsigned char**)malloc(width * sizeof(unsigned char*));
-		if (print == NULL) { printf("\nerror with malloc fr"); return -1; }
-		for (i = 0; i < width; i++) {
-			print[i] = (unsigned char*)malloc(height * sizeof(unsigned char));
-			if (print[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
-		}
-
-		//initialize the image
-		for (i = 0; i < width; i++)
-			for (j = 0; j < height; j++)
-				print[i][j] = 0;
-
-		read_image(inn[selImg], frame1);
-
-		GaussianBlur();
-
-
-		for (i = 0; i < width; i++)
-			for (j = 0; j < height; j++)
-				print[i][j] = f[i][j];
-
-		write_image(out1[selImg], print);
-
-		auto ss = timer::now();
-
-		for (int i = 0; i < imgNo; ++i)
-			//Sobel();
-			//SobelUnroll();
-			//SobelUnroll_2Factor_RegBlocking();
-			//SobelTiling_32();
-			//SobelAvx();
-			SobelOpenmp();
-			//SobelOpenmpSimd();
-		auto es = timer::now();
-
-		/* write gradient to image*/
-
-		for (i = 0; i < width; i++)
-			for (j = 0; j < height; j++)
-				print[i][j] = g[i][j];
-
-		write_image(out2[selImg], print);
-
-		auto timeS = duration_cast<microseconds>(es - ss);
-		float fTimeS = (float)timeS.count() / 1000000;
-		fulltimeS += fTimeS;
-		//cout << endl << "Time: " << fTimeG or fTimeS << "\n" << endl; //To check time of individual image
-
-		for (i = 0; i < width; i++)
-			free(frame1[i]);
-		free(frame1);
-
-
-
-		for (i = 0; i < width; i++)
-			free(print[i]);
-		free(print);
+	//consider using realloc for better dynamic us of memory
+	frame1 = (unsigned char**)malloc(width * sizeof(unsigned char*));
+	if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
+	for (i = 0; i < width; i++) {
+		frame1[i] = (unsigned char*)malloc(height * sizeof(unsigned char));
+		if (frame1[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
 	}
 
-	/*for (i = 0; i < N; i++)
+
+	//create the image
+	print = (unsigned char**)malloc(width * sizeof(unsigned char*));
+	if (print == NULL) { printf("\nerror with malloc fr"); return -1; }
+	for (i = 0; i < width; i++) {
+		print[i] = (unsigned char*)malloc(height * sizeof(unsigned char));
+		if (print[i] == NULL) { printf("\nerror with malloc fr"); return -1; }
+	}
+
+	//initialize the image
+	for (i = 0; i < width; i++)
+		for (j = 0; j < height; j++)
+			print[i][j] = 0;
+
+	read_image(inn[selImg], frame1);
+
+	GaussianBlur();
+
+
+	for (i = 0; i < width; i++)
+		for (j = 0; j < height; j++)
+			print[i][j] = f[i][j];
+
+	write_image(out1[selImg], print);
+
+	auto ss = timer::now();
+
+	for (int i = 0; i < imgNo; ++i)
+		//Sobel();
+		//SobelUnroll();
+		//SobelUnroll_2Factor_RegBlocking();
+		//SobelTiling_32();
+		SobelAvx();
+		//SobelOpenmp();
+		//SobelOpenmpSimd();
+
+	auto es = timer::now();
+
+	/* write gradient to image*/
+
+	for (i = 0; i < width; i++)
+		for (j = 0; j < height; j++)
+			print[i][j] = g[i][j];
+
+	write_image(out2[selImg], print);
+
+	auto timeS = duration_cast<microseconds>(es - ss);
+	float fTimeS = (float)timeS.count() / 1000000;
+	fulltimeS += fTimeS;
+	//cout << endl << "Time: " << fTimeG or fTimeS << "\n" << endl; //To check time of individual image
+
+	for (i = 0; i < width; i++)
 		free(frame1[i]);
 	free(frame1);
 
 
 
-	for (i = 0; i < N; i++)
+	for (i = 0; i < width; i++)
 		free(print[i]);
-	free(print);*/
+	free(print);
 
 
 	return 0;
@@ -786,7 +768,7 @@ void SobelAvx() { // USes avx registers to compute 8 values at a time
 
 }
 
-void SobelOpenmp() { // uses openmp to parallelize the routine
+void SobelParallel() { // uses openmp to parallelize the routine
 
 
 	int i, j;
@@ -852,7 +834,7 @@ void SobelOpenmp() { // uses openmp to parallelize the routine
 
 }
 
-void SobelOpenmpSimd() { // uses openmp to parallelize the routine (Needs gcc compiler)
+void SobelParallelSimd() { // uses openmp to parallelize the routine (Needs gcc compiler)
 
 
 	int i, j;
@@ -914,6 +896,14 @@ void SobelOpenmpSimd() { // uses openmp to parallelize the routine (Needs gcc co
 			eD[row][col] = newAngle;
 		}
 	}
+
+}
+
+void SobelParallelAvx() {
+
+}
+
+void SobelParallelAvx512Regblocking() {
 
 }
 

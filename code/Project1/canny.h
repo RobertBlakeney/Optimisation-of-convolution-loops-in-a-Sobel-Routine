@@ -29,11 +29,12 @@ static char OUT_NAME4[] = "out4.pgm";
 
 //#define N 1024
 //#define M 1024
-#define selImg 5
+#define selImg 2
+#define imgNo 100
 extern int width, height;
 
 
-int image_detection(const char* input_files[], const char* output_files1[], const char* output_files2[], int num_images);
+int image_detection(const char* input_files[], const char* output_files1[], const char* output_files2[]);
 
 
 //void write_acc(char* filename, int angl);
@@ -51,6 +52,7 @@ void SobelTiling_32();
 void SobelAvx();
 void SobelOpenmp();
 void SobelOpenmpSimd();
+void SobelOpenmpAvx();
 
 
 //void printt(int tem, int i, int j, int max1, int max2);
