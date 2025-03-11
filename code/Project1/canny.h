@@ -50,9 +50,9 @@ void SobelUnroll();
 void SobelUnroll_2Factor_RegBlocking();
 void SobelTiling_32();
 void SobelAvx();
-void SobelOpenmp();
-void SobelOpenmpSimd();
-void SobelOpenmpAvx();
+void SobelParallel();
+void SobelParallelAvx();
+void SobelParallelAvxRegblocking();
 
 
 //void printt(int tem, int i, int j, int max1, int max2);

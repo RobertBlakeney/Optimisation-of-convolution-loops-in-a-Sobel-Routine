@@ -129,9 +129,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\Documents\Uni\3000\GPU (Img processing)\rec.pgm" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="canny.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

@@ -227,9 +227,10 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 		//SobelUnroll();
 		//SobelUnroll_2Factor_RegBlocking();
 		//SobelTiling_32();
-		SobelAvx();
-		//SobelOpenmp();
-		//SobelOpenmpSimd();
+		//SobelAvx();
+		//SobelParallel();
+		//SobelParallelAvx();
+		SobelParallelAvxRegblocking();
 
 	auto es = timer::now();
 
@@ -783,6 +784,7 @@ void SobelParallel() { // uses openmp to parallelize the routine
 
 	unsigned char temp;
 
+	omp_set_num_threads(8);
 
 
 
@@ -834,78 +836,269 @@ void SobelParallel() { // uses openmp to parallelize the routine
 
 }
 
-void SobelParallelSimd() { // uses openmp to parallelize the routine (Needs gcc compiler)
 
-
+void SobelParallelAvx() {
+	
 	int i, j;
-	int    row, col;
+	int row, col;
 	int rowOffset;
 	int colOffset;
 	int Gx;
 	int Gy;
 	float thisAngle;
-	int newAngle = 0;
+	int newAngle;
 	int newPixel;
 
 	unsigned char temp;
 
-
 	/* Declare Sobel masks */
-	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
-	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
-	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
 
-	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
-	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
-	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+	alignas(32) int gxMask[3][3] = {
+		{-1, 0, 1},
+		{-2, 0, 2},
+		{-1, 0, 1}
+	};
 
+	alignas(32) int gyMask[3][3] = {
+	{-1, -2, -1},
+	{0, 0, 0},
+	{1, 2, 1}
+	};
+
+	omp_set_num_threads(8);
 
 	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
 	#pragma omp parallel for private(row, col, rowOffset, colOffset, Gx, Gy, thisAngle, newAngle) shared(f, g, eD, GxMask, GyMask)
-	for (row = 1; row < width - 1; row++) {
-		//#pragma omp simd private(colOffset, rowOffset, Gx, Gy)  //enable for gcc
-		for (col = 1; col < height - 1; col++) {
+	for (row = 1; row < width - 1; ++row) {
+		for (col = 1; col < height - 1; col += 8) {
+			__m256i Gx = _mm256_setzero_si256();
+			__m256i Gy = _mm256_setzero_si256();
 
-			Gx = 0;
-			Gy = 0;
+			for (int rowOffset = -1; rowOffset <= 1; ++rowOffset) {
+				for (int colOffset = -1; colOffset <= 1; ++colOffset) {
+					alignas(32) int tempPixels[8];
+					for (int i = 0; i < 8; ++i)
+						if (col + colOffset + i < width)
+							tempPixels[i] = f[row + rowOffset][col + colOffset + i];
 
-			/* Calculate the sum of the Sobel mask times the nine surrounding pixels in the x and y direction */
-			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
-				for (colOffset = -1; colOffset <= 1; colOffset++) {
+					__m256i pixels = _mm256_load_si256((__m256i*)tempPixels);
 
-					Gx += f[row + rowOffset][col + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
-					Gy += f[row + rowOffset][col + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
+					__m256i GxMask = _mm256_set1_epi32(gxMask[rowOffset + 1][colOffset + 1]);
+					__m256i GyMask = _mm256_set1_epi32(gyMask[rowOffset + 1][colOffset + 1]);
+
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
 				}
 			}
 
-			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
+			__m256i gradient = _mm256_add_epi32(_mm256_abs_epi32(Gx), _mm256_abs_epi32(Gy));
 
-			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
+			alignas(32) int result[8];
+			alignas(32) int gx[8];
+			alignas(32) int gy[8];
 
-			/* Convert actual edge direction to approximate value */
-			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-				newAngle = 0;
-			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-				newAngle = 45;
-			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-				newAngle = 90;
-			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-				newAngle = 135;
+			_mm256_store_si256((__m256i*)result, gradient);
+			_mm256_store_si256((__m256i*)gx, Gx);
+			_mm256_store_si256((__m256i*)gy, Gy);
 
+			for (int i = 0; i < 8; ++i) {
+				if (col + i < width)
+					g[row][col + i] = result[i];
 
-			eD[row][col] = newAngle;
+				float thisAngle = (atan2(gx[i], gy[i]) / 3.14159f) * 180.0f;
+
+				if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
+					newAngle = 0;
+				else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
+					newAngle = 45;
+				else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
+					newAngle = 90;
+				else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
+					newAngle = 135;
+				if (col + i < width)
+					eD[row][col + i] = newAngle;
+			}
 		}
 	}
-
 }
 
-void SobelParallelAvx() {
+void SobelParallelAvxRegblocking() {
 
+	int i, j;
+	int row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle;
+	int newPixel;
+	int size = 8;
+
+	unsigned char temp;
+
+	/* Declare Sobel masks */
+
+	alignas(32) int gxMask[3][3] = {
+		{-1, 0, 1},
+		{-2, 0, 2},
+		{-1, 0, 1}
+	};
+
+	alignas(32) int gyMask[3][3] = {
+	{-1, -2, -1},
+	{0, 0, 0},
+	{1, 2, 1}
+	};
+
+	omp_set_num_threads(8);
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	#pragma omp parallel for private(row, col, rowOffset, colOffset, Gx, Gy, thisAngle, newAngle) shared(f, g, eD, GxMask, GyMask)
+	for (row = 1; row < width - 1; ++row) {
+		for (col = 1; col < height - 1; col += 16) {
+			__m256i Gx = _mm256_setzero_si256();
+			__m256i Gy = _mm256_setzero_si256();
+			__m256i Gx2 = _mm256_setzero_si256();
+			__m256i Gy2 = _mm256_setzero_si256();
+			alignas(32) int tempPixels[8];
+			alignas(32) int tempPixels2[8];
+
+			for (int i = 0; i < 8; ++i)
+				if (col - 1 + i + size < width) {
+					tempPixels[i] = f[row - 1][col - 1 + i];
+					tempPixels2[i] = f[row - 1][col - 1 + i + size];
+				}
+					
+
+			__m256i pixels = _mm256_load_si256((__m256i*)tempPixels);
+			__m256i pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			__m256i GxMask = _mm256_set1_epi32(gxMask[0][0]);
+			__m256i GyMask = _mm256_set1_epi32(gyMask[0][0]);
+			Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+			Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+			Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+			Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+			for (int i = 0; i < 8; ++i)
+				if (col + i + size < width) {
+					tempPixels[i] = f[row - 1][col + i];
+					tempPixels2[i] = f[row - 1][col + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GyMask = _mm256_set1_epi32(gyMask[0][1]);
+			Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+			for (int i = 0; i < 8; ++i)
+				if (col + 1 + i + size < width) {
+					tempPixels[i] = f[row - 1][col + 1 + i];
+					tempPixels[i] = f[row - 1][col + 1 + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GxMask = _mm256_set1_epi32(gxMask[0][2]);
+			GyMask = _mm256_set1_epi32(gyMask[0][2]);
+			Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+			Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+			Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+			Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+			for (int i = 0; i < 8; ++i)
+				if (col - 1 + i + size < width) {
+					tempPixels[i] = f[row][col - 1 + i];
+					tempPixels2[i] = f[row][col - 1 + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GxMask = _mm256_set1_epi32(gxMask[1][0]);
+			Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+
+			for (int i = 0; i < 8; ++i)
+				if (col + 1 + i + size < width) {
+					tempPixels[i] = f[row][col + 1 + i];
+					tempPixels2[i] = f[row][col + 1 + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GxMask = _mm256_set1_epi32(gxMask[1][2]);
+			Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+			Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+
+			for (int i = 0; i < 8; ++i)
+				if (col - 1 + i + size < width) {
+					tempPixels[i] = f[row + 1][col - 1 + i];
+					tempPixels2[i] = f[row + 1][col - 1 + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GxMask = _mm256_set1_epi32(gxMask[2][0]);
+			GyMask = _mm256_set1_epi32(gyMask[2][0]);
+			Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+			Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+			Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+			Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+			
+			for (int i = 0; i < 8; ++i)
+				if (col + i + size < width) {
+					tempPixels[i] = f[row + 1][col + i];
+					tempPixels2[i] = f[row + 1][col + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GyMask = _mm256_set1_epi32(gyMask[2][1]);
+			Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+			Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+			
+			for (int i = 0; i < 8; ++i)
+				if (col + 1 + i + size < width) {
+					tempPixels[i] = f[row + 1][col + 1 + i];
+					tempPixels2[i] = f[row + 1][col + 1 + i + size];
+				}
+					
+
+			pixels = _mm256_load_si256((__m256i*)tempPixels);
+			pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+			GxMask = _mm256_set1_epi32(gxMask[2][2]);
+			GyMask = _mm256_set1_epi32(gyMask[2][2]);
+			Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+			Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+			Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+			Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+
+			__m256i gradient = _mm256_add_epi32(_mm256_abs_epi32(Gx), _mm256_abs_epi32(Gy));
+			__m256i gradient2 = _mm256_add_epi32(_mm256_abs_epi32(Gx2), _mm256_abs_epi32(Gy2));
+
+			alignas(32) int result[8];
+			alignas(32) int result2[8];
+
+			_mm256_store_si256((__m256i*)result, gradient);
+			_mm256_store_si256((__m256i*)result2, gradient2);
+
+
+			for (int i = 0; i < 8; ++i) {
+				if (col + i + size < width) {
+					g[row][col + i] = result[i];
+					g[row][col + i + size] = result2[i];
+				}
+					
+			}
+		}
+	}
 }
 
-void SobelParallelAvx512Regblocking() {
 
-}
-
-
-#pragma endregion
+#pragma endregion 
