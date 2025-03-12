@@ -1,0 +1,5 @@
+﻿2 cpu routines
+
+data collection with absolute values
+
+setup gpu project

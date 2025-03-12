@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="soruce">
+      <UniqueIdentifier>{380d4156-437c-49d2-993e-682ce3e993f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header">
+      <UniqueIdentifier>{e7006de5-029f-4626-96dc-614c5583a656}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="canny.cpp">
+      <Filter>soruce</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="canny.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="canny.cuh">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="canny.cu">
+      <Filter>soruce</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>
