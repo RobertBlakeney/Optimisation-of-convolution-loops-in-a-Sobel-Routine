@@ -29,12 +29,12 @@ static char OUT_NAME4[] = "out4.pgm";
 
 //#define N 1024
 //#define M 1024
-#define selImg 0
-#define imgNo 90000
+//#define selImg 0
+#define imgNo 10000
 extern int width, height;
 
 
-int image_detection(const char* input_files[], const char* output_files1[], const char* output_files2[]);
+int image_detection(const char* input_files[], const char* output_files1[], const char* output_files2[], int selImg);
 
 
 //void write_acc(char* filename, int angl);

@@ -5,11 +5,9 @@ vector<vector<int>> f, g, eD;
 unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
-float fulltimeG = 0;
-float fulltimeS = 0;
+float timeS = 0;
+int runs[] = { 5000, 1000, 500, 100, 10, 1 };
 
-// use of high res clock for accurate timing
-typedef std::chrono::high_resolution_clock timer;
 
 int main() {
 
@@ -18,17 +16,18 @@ int main() {
 	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm", "output/out4G.pgm", "output/out5G.pgm", "output/out6G.pgm"};
 	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm", "output/out4S.pgm", "output/out5S.pgm", "output/out6S.pgm"};
 
+	for (int i = 0; i < 6; ++i) {
+		image_detection(inList, outListG, outListS, i);
 
-	image_detection(inList, outListG, outListS);
+		long pixelS = runs[i] * ((width - 2) * (height - 2));
 
-	long long int pixelS = imgNo * ((width - 2) * (height - 2));
+		long float ppsS = pixelS / timeS;
 
-	long float ppsS = pixelS / fulltimeS;
-	float GppsS = ppsS;
+		cout << "\nTotal time to process sobel mask: " << timeS << endl;
 
-	cout << "\nTotal time to process sobel mask: " << fulltimeS << endl;
+		cout << "\nPixels per second of sobel mask: " << ppsS << "\n" << endl;
+	}
 
-	cout << "\nGpps of sobel mask: " << GppsS << endl;
 
 	system("pause");
 	return 0;
@@ -161,7 +160,7 @@ void Sobel() {
 }
 
 
-int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
+int image_detection(const char* inn[], const char* out1[], const char* out2[], int selImg) {
 
 
 	int i, j;
@@ -221,19 +220,22 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 
 	write_image(out1[selImg], print);
 
-	auto ss = timer::now();
+	//SobelUnroll();
+	//SobelUnroll_2Factor_RegBlocking();
+	//SobelTiling_32();
+	//SobelAvx();
+	//SobelParallel();
+	//SobelParallelAvx();
+	//SobelParallelAvxRegblocking();
 
-	for (int i = 0; i < imgNo; ++i)
-		//Sobel();
-		//SobelUnroll();
-		//SobelUnroll_2Factor_RegBlocking();
-		//SobelTiling_32();
-		//SobelAvx();
-		//SobelParallel();
-		//SobelParallelAvx();
-		SobelParallelAvxRegblocking();
+	timeS = omp_get_wtime();
 
-	auto es = timer::now();
+	for (int i = 0; i < runs[selImg]; ++i)
+		Sobel();
+	
+
+
+	timeS = omp_get_wtime() - timeS;
 
 	/* write gradient to image*/
 
@@ -243,10 +245,7 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 
 	write_image(out2[selImg], print);
 
-	auto timeS = duration_cast<microseconds>(es - ss);
-	float fTimeS = (float)timeS.count() / 1000000;
-	fulltimeS += fTimeS;
-	//cout << endl << "Time: " << fTimeG or fTimeS << "\n" << endl; //To check time of individual image
+
 
 	for (i = 0; i < width; i++)
 		free(frame1[i]);
