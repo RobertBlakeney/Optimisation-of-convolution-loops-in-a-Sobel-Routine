@@ -484,21 +484,6 @@ void SobelUnroll() { //A simple unroll of the innermost loops
 
 
 			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
-
-			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
-
-			/* Convert actual edge direction to approximate value */
-			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-				newAngle = 0;
-			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-				newAngle = 45;
-			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-				newAngle = 90;
-			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-				newAngle = 135;
-
-
-			eD[row][col] = newAngle;
 		}
 	}
 
@@ -590,21 +575,6 @@ void SobelUnroll_2Factor_RegBlocking() { //Preforms small factor register blocki
 			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
 			g[row][col+1] = (unsigned char)(sqrt(Gx2 * Gx2 + Gy2 * Gy2));  // 3 ops
 
-			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
-			thisAngle2 = (((atan2(Gx2, Gy2)) / 3.14159) * 180.0);
-
-			/* Convert actual edge direction to approximate value */
-			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-				newAngle = 0;
-			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-				newAngle = 45;
-			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-				newAngle = 90;
-			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-				newAngle = 135;
-
-
-			eD[row][col] = newAngle;
 		}
 	}
 
@@ -662,21 +632,6 @@ void SobelTiling_32() { //Preforms tiling on a block size of 32
 
 
 					g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
-
-					thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
-
-					/* Convert actual edge direction to approximate value */
-					if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-						newAngle = 0;
-					else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-						newAngle = 45;
-					else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-						newAngle = 90;
-					else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-						newAngle = 135;
-
-
-					eD[row][col] = newAngle;
 				}
 			}
 
@@ -750,19 +705,6 @@ void SobelAvx() { // USes avx registers to compute 8 values at a time
 			for (int i = 0; i < 8; ++i) {
 				if (col + i < width)
 					g[row][col + i] = result[i];
-
-				float thisAngle = (atan2(gx[i], gy[i]) / 3.14159f) * 180.0f;
-
-				if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-					newAngle = 0;
-				else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-					newAngle = 45;
-				else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-					newAngle = 90;
-				else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-					newAngle = 135;
-				if (col + i < width)
-					eD[row][col + i] = newAngle;
 			}
 		}
 	}
@@ -816,21 +758,6 @@ void SobelParallel() { // uses openmp to parallelize the routine
 			}
 
 			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
-
-			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
-
-			/* Convert actual edge direction to approximate value */
-			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-				newAngle = 0;
-			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-				newAngle = 45;
-			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-				newAngle = 90;
-			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-				newAngle = 135;
-
-
-			eD[row][col] = newAngle;
 		}
 	}
 
@@ -894,29 +821,13 @@ void SobelParallelAvx() {
 			__m256i gradient = _mm256_add_epi32(_mm256_abs_epi32(Gx), _mm256_abs_epi32(Gy));
 
 			alignas(32) int result[8];
-			alignas(32) int gx[8];
-			alignas(32) int gy[8];
+
 
 			_mm256_store_si256((__m256i*)result, gradient);
-			_mm256_store_si256((__m256i*)gx, Gx);
-			_mm256_store_si256((__m256i*)gy, Gy);
 
 			for (int i = 0; i < 8; ++i) {
 				if (col + i < width)
 					g[row][col + i] = result[i];
-
-				float thisAngle = (atan2(gx[i], gy[i]) / 3.14159f) * 180.0f;
-
-				if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-					newAngle = 0;
-				else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-					newAngle = 45;
-				else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-					newAngle = 90;
-				else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-					newAngle = 135;
-				if (col + i < width)
-					eD[row][col + i] = newAngle;
 			}
 		}
 	}
