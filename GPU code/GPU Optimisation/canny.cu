@@ -1,15 +1,11 @@
 #include "canny.cuh"
-//19 refs to N and M
-//unsigned char filt[N][M], gradient[N][M], grad2[N][M], edgeDir[N][M]; //5 3 0 2
 unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
-__constant__ int d_GxMask[3][3], d_GyMask[3][3];
 int width, height = 0;
-float fulltimeG = 0;
-float fulltimeS = 0;
+float timeS = 0;
+int runs[] = { 5000, 1000, 500, 100, 10, 1 };
+float elapsedTime;
 
-// use of high res clock for accurate timing
-typedef std::chrono::high_resolution_clock timer;
 
 int main() {
 
@@ -18,42 +14,37 @@ int main() {
 	const char* outListG[] = { "output/outG.pgm", "output/out2G.pgm", "output/out3G.pgm", "output/out4G.pgm", "output/out5G.pgm", "output/out6G.pgm" };
 	const char* outListS[] = { "output/outS.pgm", "output/out2S.pgm", "output/out3S.pgm", "output/out4S.pgm", "output/out5S.pgm", "output/out6S.pgm" };
 
-	image_detection(inList, outListG, outListS);
+	for (int i = 0; i < 6; ++i) {
+		image_detection(inList, outListG, outListS, i);
 
-	long long int pixelS = imgNo * ((width - 2) * (height - 2));
+		long pixelS = runs[i] * ((width - 2) * (height - 2));
 
-	double ppsS = pixelS / fulltimeS;
-	float GppsS = ppsS / 1000000000;
+		cout << "\nTime: " << elapsedTime << endl;
 
-	cout << "\nTotal time to process sobel mask: " << fulltimeS << endl;
+		long float ppsS = pixelS /  (elapsedTime/4);
 
-	cout << "\nGpps of sobel mask: " << GppsS << endl;
+		cout << "\nPixels per second of sobel mask: " << ppsS << "\n" << endl;
+	}
+
 
 	system("pause");
 	return 0;
 }
 
-__global__ void SobelGPU(unsigned char* f, unsigned char* g, int width, int height) {
-	int row = blockIdx.y * blockDim.y + threadIdx.y;
-	int col = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void sobel_GPU(int* d_Filt,int* d_gradient, const unsigned width, const unsigned height ) {
+	int x = threadIdx.x + blockIdx.x * blockDim.x;
+	int y = threadIdx.y + blockIdx.y * blockDim.y;
 
-	if (row >= 1 && row < height - 1 && col >= 1 && col < width - 1) {
-		int Gx = 0;
-		int Gy = 0;
+	float gx, gy;
 
-		for (int rowOffset = -1; rowOffset <= 1; rowOffset++) {
-			for (int colOffset = -1; colOffset <= 1; colOffset++) {
+	if (x > 0 && y > 0 && x < width - 1 && y < height - 1) {
+		gx = (-1 * d_Filt[(y - 1) * width + (x - 1)]) + (-2 * d_Filt[y * width + (x - 1)]) + (-1 * d_Filt[(y + 1) * width + (x - 1)]) +
+			(d_Filt[(y - 1) * width + (x + 1)]) + (2 * d_Filt[y * width + (x + 1)]) + (d_Filt[(y + 1) * width + (x + 1)]);
+		gy = (-1 * d_Filt[(y - 1) * width + (x - 1)]) + (-2 * d_Filt[(y - 1) * width + x]) + (-1 * d_Filt[(y - 1) * width + (x + 1)]) +
+			(d_Filt[(y + 1) * width + (x -1)]) + (2 * d_Filt[(y+1) * width + x]) + (d_Filt[(y + 1) * width + (x + 1)]);
 
-				Gx += f[(row + rowOffset) * width + (col + colOffset)] * d_GxMask[rowOffset + 1][colOffset + 1];
-				Gy += f[(row + rowOffset) * width + (col + colOffset)] * d_GyMask[rowOffset + 1][colOffset + 1];
-			}
-		}
-
-		int grad = (int)sqrtf(Gx * Gx + Gy * Gy);
-		g[row * width + col] = (unsigned char)grad;
+		d_gradient[y * width + x] = sqrt((gx * gx) + (gy * gy));
 	}
-
-
 }
 
 void GaussianBlur() {
@@ -108,7 +99,7 @@ void GaussianBlur() {
 					newPixel += frame1[row + rowOffset][col + colOffset] * gaussianMask[2 + rowOffset][2 + colOffset];  // 2 ops
 				}
 			}
-			f[(row * width) + col] = (unsigned char*)(newPixel / 159);  // 1 ops
+			filt[(width * row) + col] = (unsigned char)(newPixel / 159);  // 1 ops
 		}
 	}
 
@@ -154,34 +145,19 @@ void Sobel() {
 			for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
 				for (colOffset = -1; colOffset <= 1; colOffset++) {
 
-					Gx += (int)f[(row + rowOffset) * width +(col + colOffset)] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
-					Gy += (int)f[(row + rowOffset) * width + (col + colOffset)] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
+					Gx += filt[(width * (row + rowOffset)) + col + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+					Gy += filt[(width * (row + rowOffset)) + col + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
 				}
 			}
-			int val = sqrt(Gx * Gx + Gy * Gy);
-			g[(row * width) + col] = (unsigned char*)val;
 
-			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
-
-			/* Convert actual edge direction to approximate value */
-			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-				newAngle = 0;
-			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-				newAngle = 45;
-			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-				newAngle = 90;
-			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-				newAngle = 135;
-
-
-			//eD[row][col] = newAngle;
+			gradient[(row * width) + col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
 		}
 	}
 
 }
 
 
-int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
+int image_detection(const char* inn[], const char* out1[], const char* out2[], int selImg) {
 
 
 	int i, j;
@@ -193,8 +169,9 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 	float thisAngle;
 	int newAngle;
 	int newPixel;
-	unsigned char* d_f, * d_g;
-
+	
+	cudaError_t cudaStatus;
+	cudaEvent_t start, stop;
 
 	unsigned char temp;
 
@@ -204,21 +181,10 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 	height = data.first;
 	width = data.second;
 
-	f = (unsigned char**)malloc(width * height * sizeof(unsigned char*));
+	filt = (int*)malloc(width * height * sizeof(int));
+	gradient = (int*)malloc(width * height * sizeof(int));
 
-	g = (unsigned char**)malloc(width * height * sizeof(unsigned char*));
 
-	//creating device arrays
-	cudaMalloc((void**)&d_f, width * height * sizeof(unsigned char));
-	cudaMalloc((void**)&d_g, width * height * sizeof(unsigned char));
-
-	int GxMask[3][3] = {{ -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 }};
-	int GyMask[3][3] = {{ -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 }};
-
-	cudaMemcpyToSymbol(d_GxMask, GxMask, 3 * 3 * sizeof(int));
-	cudaMemcpyToSymbol(d_GyMask, GyMask, 3 * 3 * sizeof(int));
-
-	//consider using realloc for better dynamic us of memory
 	frame1 = (unsigned char**)malloc(width * sizeof(unsigned char*));
 	if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
 	for (i = 0; i < width; i++) {
@@ -247,45 +213,68 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 
 	for (i = 0; i < width; i++)
 		for (j = 0; j < height; j++)
-			print[i][j] = (unsigned char)f[(i * width) + j];
+			print[i][j] = filt[(i * width) + j];
 
 	write_image(out1[selImg], print);
 
+	int* d_Filt, *d_Gradient;
 
-
-	cudaMemcpy(d_f, f, width * height * sizeof(unsigned char), cudaMemcpyHostToDevice);
-
-	dim3 dimBlock(16, 16);
-	dim3 dimGrid((width + dimBlock.x - 1) / dimBlock.x, (height + dimBlock.y - 1) / dimBlock.y);
-
-	auto ss = timer::now();
-
-	for (int i = 0; i < imgNo; ++i) {
-		Sobel();
-		//SobelGPU << <dimGrid, dimBlock >> > (d_f, d_g, width, height);
+	cudaStatus = cudaMalloc((void**)&d_Filt, width * height * (sizeof(int)));
+	if (cudaStatus != cudaSuccess) {
+		printf("\nCudaMalloc failed.");
+		cudaFree(d_Filt);
+		return -1;
 	}
-	
-	auto es = timer::now();
 
-	cudaMemcpy(g, d_g, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+	cudaStatus = cudaMalloc((void**)&d_Gradient, width * height * (sizeof(int)));
+	if (cudaStatus != cudaSuccess) {
+		printf("\nCudaMalloc failed.");
+		cudaFree(d_Filt); cudaFree(d_Gradient);
+		return -1;
+	}
 
-	cudaFree(d_f);
-	cudaFree(d_g);
+	cudaStatus = cudaMemcpy(d_Filt, filt, width * height * sizeof(int), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		printf("\ncuda copy failed.");
+		cudaFree(d_Filt); cudaFree(d_Gradient);
+		return -1;
+	}
+
+	dim3 blockSize(threads, threads, 1);
+	dim3 gridSize(width/ threads, height/ threads, 1);
+
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+	cudaEventRecord(start, 0);
+
+	for (int i = 0; i < 4; ++i) {
+		//Sobel();
+		sobel_GPU << <gridSize, blockSize >> > (d_Filt, d_Gradient, width, height);
+	}
+		
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
+	cudaEventElapsedTime(&elapsedTime, start, stop);
 
 
+
+	cudaStatus = cudaMemcpy(gradient, d_Gradient, width * height * sizeof(int), cudaMemcpyDeviceToHost);
+	if (cudaStatus != cudaSuccess) {
+		printf("\ncuda copy failed");
+		cudaFree(d_Filt); cudaFree(d_Gradient);
+		return -1;
+	}
 
 	/* write gradient to image*/
 
 	for (i = 0; i < width; i++)
 		for (j = 0; j < height; j++)
-			print[i][j] = (unsigned char)g[(i * width) + j];
+			print[i][j] = gradient[(i * width) + j];
 
 	write_image(out2[selImg], print);
 
-	auto timeS = duration_cast<microseconds>(es - ss);
-	float fTimeS = (float)timeS.count() / 1000000;
-	fulltimeS += fTimeS;
-	//cout << endl << "Time: " << fTimeG or fTimeS << "\n" << endl; //To check time of individual image
+
 
 	for (i = 0; i < width; i++)
 		free(frame1[i]);
@@ -296,9 +285,6 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[]) {
 	for (i = 0; i < width; i++)
 		free(print[i]);
 	free(print);
-
-	free(f);
-	free(g);
 
 
 	return 0;
@@ -463,3 +449,4 @@ int getint(FILE* fp) /* adapted from "xv" source code */
 	return i;
 }
 #pragma endregion
+
