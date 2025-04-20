@@ -6,9 +6,9 @@ unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
 float timeS = 0;
-int runs[] = { 5000, 1000, 500, 100, 10, 1 };
+int runs[] = { 50000, 10000, 5000, 1000, 100, 100 };
 
-
+//Orignal program supplied by Vasilios Kelefouras
 int main() {
 
 	int i, j;
@@ -139,21 +139,6 @@ void Sobel() {
 			}
 
 			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
-
-			thisAngle = (((atan2(Gx, Gy)) / 3.14159) * 180.0);
-
-			/* Convert actual edge direction to approximate value */
-			if (((thisAngle >= -22.5) && (thisAngle <= 22.5)) || (thisAngle >= 157.5) || (thisAngle <= -157.5))
-				newAngle = 0;
-			else if (((thisAngle > 22.5) && (thisAngle < 67.5)) || ((thisAngle > -157.5) && (thisAngle < -112.5)))
-				newAngle = 45;
-			else if (((thisAngle >= 67.5) && (thisAngle <= 112.5)) || ((thisAngle >= -112.5) && (thisAngle <= -67.5)))
-				newAngle = 90;
-			else if (((thisAngle > 112.5) && (thisAngle < 157.5)) || ((thisAngle > -67.5) && (thisAngle < -22.5)))
-				newAngle = 135;
-
-
-			eD[row][col] = newAngle;
 		}
 	}
 
@@ -184,10 +169,8 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 	f = vector<vector<int>>(width, vector<int>(height));
 	g = vector<vector<int>>(width, vector<int>(height));
-	eD = vector<vector<int>>(width, vector<int>(height));
 
 
-	//consider using realloc for better dynamic us of memory
 	frame1 = (unsigned char**)malloc(width * sizeof(unsigned char*));
 	if (frame1 == NULL) { printf("\nerror with malloc fr"); return -1; }
 	for (i = 0; i < width; i++) {
@@ -220,18 +203,22 @@ int image_detection(const char* inn[], const char* out1[], const char* out2[], i
 
 	write_image(out1[selImg], print);
 
-	//SobelUnroll();
-	//SobelUnroll_2Factor_RegBlocking();
-	//SobelTiling_32();
-	//SobelAvx();
-	//SobelParallel();
-	//SobelParallelAvx();
-	//SobelParallelAvxRegblocking();
 
 	timeS = omp_get_wtime();
 
-	for (int i = 0; i < runs[selImg]; ++i)
-		Sobel();
+	for (int i = 0; i < runs[selImg]; ++i) {
+		//Sobel();
+		//SobelUnroll();
+		//SobelUnroll_4Factor_RegBlocking();
+		//SobelUnroll_8Factor_RegBlocking();
+		//SobelTiling_32();
+		//SobelAvx();
+		//SobelParallel();
+		//SobelParallelAvx();
+		//SobelParallelAvxRegblocking();
+		SobelParallelAvxRegBlocking2Tiled64();
+	}
+		
 	
 
 
@@ -489,15 +476,15 @@ void SobelUnroll() { //A simple unroll of the innermost loops
 
 }
 
-void SobelUnroll_2Factor_RegBlocking() { //Preforms small factor register blocking
+void SobelUnroll_4Factor_RegBlocking() { //Preforms small factor register blocking
 
 
 	int i, j;
 	unsigned int    row, col;
 	int rowOffset;
 	int colOffset;
-	int Gx, Gx2;
-	int Gy, Gy2;
+	int Gx, Gx2, Gx3, Gx4, Gx5, Gx6, Gx7, Gx8;
+	int Gy, Gy2, Gy3, Gy4, Gy5, Gy6, Gy7, Gy8;
 	float thisAngle, thisAngle2;
 	int newAngle = 0;
 	int newPixel;
@@ -518,62 +505,433 @@ void SobelUnroll_2Factor_RegBlocking() { //Preforms small factor register blocki
 
 	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
 	for (row = 1; row < width - 1; row++) {
-		Gx = 0, Gx2 = 0, Gy = 0, Gy2 = 0;
-		for (col = 1; col < height - 1; col += 2) {
+		for (col = 1; col < height - 1; col += 4) {
+			Gx = 0, Gx2 = 0, Gx3 = 0, Gx4 = 0, Gx5 = 0, Gx6 = 0, Gx7 = 0, Gx8 = 0;
+			Gy = 0, Gy2 = 0, Gy3 = 0, Gy4 = 0, Gy5 = 0, Gy6 = 0, Gy7 = 0, Gy8 = 0;
+
+			if (col + 3 >= height -1) {
+				for (int c = col; c < height - 1; c++) {
+					for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
+						for (colOffset = -1; colOffset <= 1; colOffset++) {
+
+							Gx += f[row + rowOffset][c + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+							Gy += f[row + rowOffset][c + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
+						}
+					}
+
+					g[row][c] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
+				}
+				continue;
+			}
+
+			int g_00 = f[row - 1][col - 1], g_01 = f[row - 1][col], g_02 = f[row - 1][col + 1];
+			int g_10 = f[row][col - 1], g_11 = f[row][col], g_12 = f[row][col + 1];
+			int g_20 = f[row + 1][col - 1], g_21 = f[row + 1][col], g_22 = f[row + 1][col + 1];
+
+			int g2_00 = f[row - 1][col], g2_01 = f[row - 1][col + 1], g2_02 = f[row - 1][col + 2];
+			int g2_10 = f[row][col], g2_11 = f[row][col + 1], g2_12 = f[row][col + 2];
+			int g2_20 = f[row + 1][col], g2_21 = f[row + 1][col + 1], g2_22 = f[row + 1][col + 2];
+
+			int g3_00 = f[row - 1][col + 1], g3_01 = f[row - 1][col + 2], g3_02 = f[row - 1][col + 3];
+			int g3_10 = f[row][col + 1], g3_11 = f[row][col + 2], g3_12 = f[row][col + 3];
+			int g3_20 = f[row + 1][col + 1], g3_21 = f[row + 1][col + 2], g3_22 = f[row + 1][col + 3];
+
+			int g4_00 = f[row - 1][col + 2], g4_01 = f[row - 1][col + 3], g4_02 = f[row - 1][col + 4];
+			int g4_10 = f[row][col + 2], g4_11 = f[row][col + 3], g4_12 = f[row][col + 4];
+			int g4_20 = f[row + 1][col + 2], g4_21 = f[row + 1][col + 3], g4_22 = f[row + 1][col + 4];
+
+			Gx += g_00 * GxMask[0][0];
+			Gx += g_01 * GxMask[0][1];
+			Gx += g_02 * GxMask[0][2];
+
+			Gx += g_10 * GxMask[1][0];
+			Gx += g_11 * GxMask[1][1];
+			Gx += g_12 * GxMask[1][2];
+
+			Gx += g_20 * GxMask[2][0];
+			Gx += g_21 * GxMask[2][1];
+			Gx += g_22 * GxMask[2][2];
+
+			Gx2 += g2_00 * GxMask[0][0];
+			Gx2 += g2_01 * GxMask[0][1];
+			Gx2 += g2_02 * GxMask[0][2];
+
+			Gx2 += g2_10 * GxMask[1][0];
+			Gx2 += g2_11 * GxMask[1][1];
+			Gx2 += g2_12 * GxMask[1][2];
+
+			Gx2 += g2_20 * GxMask[2][0];
+			Gx2 += g2_21 * GxMask[2][1];
+			Gx2 += g2_22 * GxMask[2][2];
+
+			Gx3 += g3_00 * GxMask[0][0];
+			Gx3 += g3_01 * GxMask[0][1];
+			Gx3 += g3_02 * GxMask[0][2];
+
+			Gx3 += g3_10 * GxMask[1][0];
+			Gx3 += g3_11 * GxMask[1][1];
+			Gx3 += g3_12 * GxMask[1][2];
+
+			Gx3 += g3_20 * GxMask[2][0];
+			Gx3 += g3_21 * GxMask[2][1];
+			Gx3 += g3_22 * GxMask[2][2];
+
+			Gx4 += g4_00 * GxMask[0][0];
+			Gx4 += g4_01 * GxMask[0][1];
+			Gx4 += g4_02 * GxMask[0][2];
+
+			Gx4 += g4_10 * GxMask[1][0];
+			Gx4 += g4_11 * GxMask[1][1];
+			Gx4 += g4_12 * GxMask[1][2];
+
+			Gx4 += g4_20 * GxMask[2][0];
+			Gx4 += g4_21 * GxMask[2][1];
+			Gx4 += g4_22 * GxMask[2][2];
 
 
-			Gx += f[row - 1][col - 1] * GxMask[0][0];
-			Gx += f[row - 1][col] * GxMask[0][1];
-			Gx += f[row - 1][col + 1] * GxMask[0][2];
 
-			Gx += f[row][col - 1] * GxMask[1][0];
-			Gx += f[row][col] * GxMask[1][1];
-			Gx += f[row][col + 1] * GxMask[1][2];
+			Gy += g_00 * GyMask[0][0];
+			Gy += g_01 * GyMask[0][1];
+			Gy += g_02 * GyMask[0][2];
 
-			Gx += f[row + 1][col - 1] * GxMask[2][0];
-			Gx += f[row + 1][col] * GxMask[2][1];
-			Gx += f[row + 1][col + 1] * GxMask[2][2];
+			Gy += g_10 * GyMask[1][0];
+			Gy += g_11 * GyMask[1][1];
+			Gy += g_12 * GyMask[1][2];
 
-			Gx2 += f[row - 1][col] * GxMask[0][0];
-			Gx2 += f[row - 1][col + 1] * GxMask[0][1];
-			Gx2 += f[row - 1][col + 2] * GxMask[0][2];
+			Gy += g_20 * GyMask[2][0];
+			Gy += g_21 * GyMask[2][1];
+			Gy += g_22 * GyMask[2][2];
 
-			Gx2 += f[row][col] * GxMask[1][0];
-			Gx2 += f[row][col + 1] * GxMask[1][1];
-			Gx2 += f[row][col + 2] * GxMask[1][2];
+			Gy2 += g2_00 * GyMask[0][0];
+			Gy2 += g2_01 * GyMask[0][1];
+			Gy2 += g2_02 * GyMask[0][2];
 
-			Gx2 += f[row + 1][col] * GxMask[2][0];
-			Gx2 += f[row + 1][col + 1] * GxMask[2][1];
-			Gx2 += f[row + 1][col + 2] * GxMask[2][2];
+			Gy2 += g2_10 * GyMask[1][0];
+			Gy2 += g2_11 * GyMask[1][1];
+			Gy2 += g2_12 * GyMask[1][2];
+
+			Gy2 += g2_20 * GyMask[2][0];
+			Gy2 += g2_21 * GyMask[2][1];
+			Gy2 += g2_22 * GyMask[2][2];
+
+			Gy3 += g3_00 * GyMask[0][0];
+			Gy3 += g3_01 * GyMask[0][1];
+			Gy3 += g3_02 * GyMask[0][2];
+
+			Gy3 += g3_10 * GyMask[1][0];
+			Gy3 += g3_11 * GyMask[1][1];
+			Gy3 += g3_12 * GyMask[1][2];
+
+			Gy3 += g3_20 * GyMask[2][0];
+			Gy3 += g3_21 * GyMask[2][1];
+			Gy3 += g3_22 * GyMask[2][2];
+
+			Gy4 += g4_00 * GyMask[0][0];
+			Gy4 += g4_01 * GyMask[0][1];
+			Gy4 += g4_02 * GyMask[0][2];
+
+			Gy4 += g4_10 * GyMask[1][0];
+			Gy4 += g4_11 * GyMask[1][1];
+			Gy4 += g4_12 * GyMask[1][2];
+
+			Gy4 += g4_20 * GyMask[2][0];
+			Gy4 += g4_21 * GyMask[2][1];
+			Gy4 += g4_22 * GyMask[2][2];
 
 
-			Gy += f[row - 1][col - 1] * GyMask[0][0];
-			Gy += f[row - 1][col] * GyMask[0][1];
-			Gy += f[row - 1][col + 1] * GyMask[0][2];
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
+			g[row][col + 1] = (unsigned char)(sqrt(Gx2 * Gx2 + Gy2 * Gy2));
+			g[row][col + 2] = (unsigned char)(sqrt(Gx3 * Gx3 + Gy3 * Gy3));
+			g[row][col + 3] = (unsigned char)(sqrt(Gx4 * Gx4 + Gy4 * Gy4));
 
-			Gy += f[row][col - 1] * GyMask[1][0];
-			Gy += f[row][col] * GyMask[1][1];
-			Gy += f[row][col + 1] * GyMask[1][2];
+		}
+	}
 
-			Gy += f[row + 1][col - 1] * GyMask[2][0];
-			Gy += f[row + 1][col] * GyMask[2][1];
-			Gy += f[row + 1][col + 1] * GyMask[2][2];
+}
 
-			Gy2 += f[row - 1][col] * GyMask[0][0];
-			Gy2 += f[row - 1][col + 1] * GyMask[0][1];
-			Gy2 += f[row - 1][col + 2] * GyMask[0][2];
-
-			Gy2 += f[row][col] * GyMask[1][0];
-			Gy2 += f[row][col + 1] * GyMask[1][1];
-			Gy2 += f[row][col + 2] * GyMask[1][2];
-
-			Gy2 += f[row + 1][col] * GyMask[2][0];
-			Gy2 += f[row + 1][col + 1] * GyMask[2][1];
-			Gy2 += f[row + 1][col + 2] * GyMask[2][2];
+void SobelUnroll_8Factor_RegBlocking() { //Preforms small factor register blocking
 
 
-			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));  // 3 ops
-			g[row][col+1] = (unsigned char)(sqrt(Gx2 * Gx2 + Gy2 * Gy2));  // 3 ops
+	int i, j;
+	unsigned int    row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx, Gx2, Gx3, Gx4, Gx5, Gx6, Gx7, Gx8;
+	int Gy, Gy2, Gy3, Gy4, Gy5, Gy6, Gy7, Gy8;
+	float thisAngle, thisAngle2;
+	int newAngle = 0;
+	int newPixel;
+
+	unsigned char temp;
+
+
+
+
+	/* Declare Sobel masks */
+	GxMask[0][0] = -1; GxMask[0][1] = 0; GxMask[0][2] = 1;
+	GxMask[1][0] = -2; GxMask[1][1] = 0; GxMask[1][2] = 2;
+	GxMask[2][0] = -1; GxMask[2][1] = 0; GxMask[2][2] = 1;
+
+	GyMask[0][0] = -1; GyMask[0][1] = -2; GyMask[0][2] = -1;
+	GyMask[1][0] = 0; GyMask[1][1] = 0; GyMask[1][2] = 0;
+	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+	for (row = 1; row < width - 1; row++) {
+		for (col = 1; col < height - 1; col += 4) {
+			Gx = 0, Gx2 = 0, Gx3 = 0, Gx4 = 0, Gx5 = 0, Gx6 = 0, Gx7 = 0, Gx8 = 0;
+			Gy = 0, Gy2 = 0, Gy3 = 0, Gy4 = 0, Gy5 = 0, Gy6 = 0, Gy7 = 0, Gy8 = 0;
+
+			if (col + 7 >= height - 1) {
+				for (int c = col; c < height - 1; c++) {
+					for (rowOffset = -1; rowOffset <= 1; rowOffset++) {
+						for (colOffset = -1; colOffset <= 1; colOffset++) {
+
+							Gx += f[row + rowOffset][c + colOffset] * GxMask[rowOffset + 1][colOffset + 1]; // 2 ops
+							Gy += f[row + rowOffset][c + colOffset] * GyMask[rowOffset + 1][colOffset + 1]; // 2 ops
+						}
+					}
+
+					g[row][c] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
+				}
+				continue;
+			}
+
+			int g_00 = f[row - 1][col - 1], g_01 = f[row - 1][col], g_02 = f[row - 1][col + 1];
+			int g_10 = f[row][col - 1], g_11 = f[row][col], g_12 = f[row][col + 1];
+			int g_20 = f[row + 1][col - 1], g_21 = f[row + 1][col], g_22 = f[row + 1][col + 1];
+
+			int g2_00 = f[row - 1][col], g2_01 = f[row - 1][col + 1], g2_02 = f[row - 1][col + 2];
+			int g2_10 = f[row][col], g2_11 = f[row][col + 1], g2_12 = f[row][col + 2];
+			int g2_20 = f[row + 1][col], g2_21 = f[row + 1][col + 1], g2_22 = f[row + 1][col + 2];
+
+			int g3_00 = f[row - 1][col + 1], g3_01 = f[row - 1][col + 2], g3_02 = f[row - 1][col + 3];
+			int g3_10 = f[row][col + 1], g3_11 = f[row][col + 2], g3_12 = f[row][col + 3];
+			int g3_20 = f[row + 1][col + 1], g3_21 = f[row + 1][col + 2], g3_22 = f[row + 1][col + 3];
+
+			int g4_00 = f[row - 1][col + 2], g4_01 = f[row - 1][col + 3], g4_02 = f[row - 1][col + 4];
+			int g4_10 = f[row][col + 2], g4_11 = f[row][col + 3], g4_12 = f[row][col + 4];
+			int g4_20 = f[row + 1][col + 2], g4_21 = f[row + 1][col + 3], g4_22 = f[row + 1][col + 4];
+
+			int g5_00 = f[row - 1][col + 3], g5_01 = f[row - 1][col + 4], g5_02 = f[row - 1][col + 5];
+			int g5_10 = f[row][col + 3], g5_11 = f[row][col + 4], g5_12 = f[row][col + 5];
+			int g5_20 = f[row + 1][col + 3], g5_21 = f[row + 1][col + 4], g5_22 = f[row + 1][col + 5];
+
+			int g6_00 = f[row - 1][col + 4], g6_01 = f[row - 1][col + 5], g6_02 = f[row - 1][col + 6];
+			int g6_10 = f[row][col + 4], g6_11 = f[row][col + 5], g6_12 = f[row][col + 6];
+			int g6_20 = f[row + 1][col +4], g6_21 = f[row + 1][col + 5], g6_22 = f[row + 1][col + 6];
+
+			int g7_00 = f[row - 1][col + 5], g7_01 = f[row - 1][col + 6], g7_02 = f[row - 1][col + 7];
+			int g7_10 = f[row][col + 5], g7_11 = f[row][col + 6], g7_12 = f[row][col + 7];
+			int g7_20 = f[row + 1][col + 5], g7_21 = f[row + 1][col + 6], g7_22 = f[row + 1][col + 7];
+
+			int g8_00 = f[row - 1][col + 6], g8_01 = f[row - 1][col + 7], g8_02 = f[row - 1][col + 8];
+			int g8_10 = f[row][col + 6], g8_11 = f[row][col + 7], g8_12 = f[row][col + 8];
+			int g8_20 = f[row + 1][col + 6], g8_21 = f[row + 1][col + 7], g8_22 = f[row + 1][col + 8];
+
+			Gx += g_00 * GxMask[0][0];
+			Gx += g_01 * GxMask[0][1];
+			Gx += g_02 * GxMask[0][2];
+
+			Gx += g_10 * GxMask[1][0];
+			Gx += g_11 * GxMask[1][1];
+			Gx += g_12 * GxMask[1][2];
+
+			Gx += g_20 * GxMask[2][0];
+			Gx += g_21 * GxMask[2][1];
+			Gx += g_22 * GxMask[2][2];
+
+			Gx2 += g2_00 * GxMask[0][0];
+			Gx2 += g2_01 * GxMask[0][1];
+			Gx2 += g2_02 * GxMask[0][2];
+
+			Gx2 += g2_10 * GxMask[1][0];
+			Gx2 += g2_11 * GxMask[1][1];
+			Gx2 += g2_12 * GxMask[1][2];
+
+			Gx2 += g2_20 * GxMask[2][0];
+			Gx2 += g2_21 * GxMask[2][1];
+			Gx2 += g2_22 * GxMask[2][2];
+
+			Gx3 += g3_00 * GxMask[0][0];
+			Gx3 += g3_01 * GxMask[0][1];
+			Gx3 += g3_02 * GxMask[0][2];
+
+			Gx3 += g3_10 * GxMask[1][0];
+			Gx3 += g3_11 * GxMask[1][1];
+			Gx3 += g3_12 * GxMask[1][2];
+
+			Gx3 += g3_20 * GxMask[2][0];
+			Gx3 += g3_21 * GxMask[2][1];
+			Gx3 += g3_22 * GxMask[2][2];
+
+			Gx4 += g4_00 * GxMask[0][0];
+			Gx4 += g4_01 * GxMask[0][1];
+			Gx4 += g4_02 * GxMask[0][2];
+
+			Gx4 += g4_10 * GxMask[1][0];
+			Gx4 += g4_11 * GxMask[1][1];
+			Gx4 += g4_12 * GxMask[1][2];
+
+			Gx4 += g4_20 * GxMask[2][0];
+			Gx4 += g4_21 * GxMask[2][1];
+			Gx4 += g4_22 * GxMask[2][2];
+
+			Gx5 += g5_00 * GxMask[0][0];
+			Gx5 += g5_01 * GxMask[0][1];
+			Gx5 += g5_02 * GxMask[0][2];
+
+			Gx5 += g5_10 * GxMask[1][0];
+			Gx5 += g5_11 * GxMask[1][1];
+			Gx5 += g5_12 * GxMask[1][2];
+
+			Gx5 += g5_20 * GxMask[2][0];
+			Gx5 += g5_21 * GxMask[2][1];
+			Gx5 += g5_22 * GxMask[2][2];
+
+			Gx6 += g6_00 * GxMask[0][0];
+			Gx6 += g6_01 * GxMask[0][1];
+			Gx6 += g6_02 * GxMask[0][2];
+
+			Gx6 += g6_10 * GxMask[1][0];
+			Gx6 += g6_11 * GxMask[1][1];
+			Gx6 += g6_12 * GxMask[1][2];
+
+			Gx6 += g6_20 * GxMask[2][0];
+			Gx6 += g6_21 * GxMask[2][1];
+			Gx6 += g6_22 * GxMask[2][2];
+
+			Gx7 += g7_00 * GxMask[0][0];
+			Gx7 += g7_01 * GxMask[0][1];
+			Gx7 += g7_02 * GxMask[0][2];
+
+			Gx7 += g7_10 * GxMask[1][0];
+			Gx7 += g7_11 * GxMask[1][1];
+			Gx7 += g7_12 * GxMask[1][2];
+
+			Gx7 += g7_20 * GxMask[2][0];
+			Gx7 += g7_21 * GxMask[2][1];
+			Gx7 += g7_22 * GxMask[2][2];
+
+			Gx8 += g8_00 * GxMask[0][0];
+			Gx8 += g8_01 * GxMask[0][1];
+			Gx8 += g8_02 * GxMask[0][2];
+
+			Gx8 += g8_10 * GxMask[1][0];
+			Gx8 += g8_11 * GxMask[1][1];
+			Gx8 += g8_12 * GxMask[1][2];
+
+			Gx8 += g8_20 * GxMask[2][0];
+			Gx8 += g8_21 * GxMask[2][1];
+			Gx8 += g8_22 * GxMask[2][2];
+
+
+
+			Gy += g_00 * GyMask[0][0];
+			Gy += g_01 * GyMask[0][1];
+			Gy += g_02 * GyMask[0][2];
+
+			Gy += g_10 * GyMask[1][0];
+			Gy += g_11 * GyMask[1][1];
+			Gy += g_12 * GyMask[1][2];
+
+			Gy += g_20 * GyMask[2][0];
+			Gy += g_21 * GyMask[2][1];
+			Gy += g_22 * GyMask[2][2];
+
+			Gy2 += g2_00 * GyMask[0][0];
+			Gy2 += g2_01 * GyMask[0][1];
+			Gy2 += g2_02 * GyMask[0][2];
+
+			Gy2 += g2_10 * GyMask[1][0];
+			Gy2 += g2_11 * GyMask[1][1];
+			Gy2 += g2_12 * GyMask[1][2];
+
+			Gy2 += g2_20 * GyMask[2][0];
+			Gy2 += g2_21 * GyMask[2][1];
+			Gy2 += g2_22 * GyMask[2][2];
+
+			Gy3 += g3_00 * GyMask[0][0];
+			Gy3 += g3_01 * GyMask[0][1];
+			Gy3 += g3_02 * GyMask[0][2];
+
+			Gy3 += g3_10 * GyMask[1][0];
+			Gy3 += g3_11 * GyMask[1][1];
+			Gy3 += g3_12 * GyMask[1][2];
+
+			Gy3 += g3_20 * GyMask[2][0];
+			Gy3 += g3_21 * GyMask[2][1];
+			Gy3 += g3_22 * GyMask[2][2];
+
+			Gy4 += g4_00 * GyMask[0][0];
+			Gy4 += g4_01 * GyMask[0][1];
+			Gy4 += g4_02 * GyMask[0][2];
+
+			Gy4 += g4_10 * GyMask[1][0];
+			Gy4 += g4_11 * GyMask[1][1];
+			Gy4 += g4_12 * GyMask[1][2];
+
+			Gy4 += g4_20 * GyMask[2][0];
+			Gy4 += g4_21 * GyMask[2][1];
+			Gy4 += g4_22 * GyMask[2][2]; 
+
+			Gy5 += g5_00 * GyMask[0][0];
+			Gy5 += g5_01 * GyMask[0][1];
+			Gy5 += g5_02 * GyMask[0][2];
+
+			Gy5 += g5_10 * GyMask[1][0];
+			Gy5 += g5_11 * GyMask[1][1];
+			Gy5 += g5_12 * GyMask[1][2];
+
+			Gy5 += g5_20 * GyMask[2][0];
+			Gy5 += g5_21 * GyMask[2][1];
+			Gy5 += g5_22 * GyMask[2][2];
+
+			Gy6 += g6_00 * GyMask[0][0];
+			Gy6 += g6_01 * GyMask[0][1];
+			Gy6 += g6_02 * GyMask[0][2];
+
+			Gy6 += g6_10 * GyMask[1][0];
+			Gy6 += g6_11 * GyMask[1][1];
+			Gy6 += g6_12 * GyMask[1][2];
+
+			Gy6 += g6_20 * GyMask[2][0];
+			Gy6 += g6_21 * GyMask[2][1];
+			Gy6 += g6_22 * GyMask[2][2];
+
+			Gy7 += g7_00 * GyMask[0][0];
+			Gy7 += g7_01 * GyMask[0][1];
+			Gy7 += g7_02 * GyMask[0][2];
+
+			Gy7 += g7_10 * GyMask[1][0];
+			Gy7 += g7_11 * GyMask[1][1];
+			Gy7 += g7_12 * GyMask[1][2];
+
+			Gy7 += g7_20 * GyMask[2][0];
+			Gy7 += g7_21 * GyMask[2][1];
+			Gy7 += g7_22 * GyMask[2][2];
+
+			Gy8 += g8_00 * GyMask[0][0];
+			Gy8 += g8_01 * GyMask[0][1];
+			Gy8 += g8_02 * GyMask[0][2];
+
+			Gy8 += g8_10 * GyMask[1][0];
+			Gy8 += g8_11 * GyMask[1][1];
+			Gy8 += g8_12 * GyMask[1][2];
+
+			Gy8 += g8_20 * GyMask[2][0];
+			Gy8 += g8_21 * GyMask[2][1];
+			Gy8 += g8_22 * GyMask[2][2]; 
+
+
+			g[row][col] = (unsigned char)(sqrt(Gx * Gx + Gy * Gy));
+			g[row][col + 1] = (unsigned char)(sqrt(Gx2 * Gx2 + Gy2 * Gy2));
+			g[row][col + 2] = (unsigned char)(sqrt(Gx3 * Gx3 + Gy3 * Gy3));
+			g[row][col + 3] = (unsigned char)(sqrt(Gx4 * Gx4 + Gy4 * Gy4));
+			g[row][col + 4] = (unsigned char)(sqrt(Gx5 * Gx5 + Gy5 * Gy5));
+			g[row][col + 5] = (unsigned char)(sqrt(Gx6 * Gx6 + Gy6 * Gy6));
+			g[row][col + 6] = (unsigned char)(sqrt(Gx7 * Gx7 + Gy7 * Gy7));
+			g[row][col + 7] = (unsigned char)(sqrt(Gx8 * Gx8 + Gy8 * Gy8));
 
 		}
 	}
@@ -608,7 +966,7 @@ void SobelTiling_32() { //Preforms tiling on a block size of 32
 	GyMask[2][0] = 1; GyMask[2][1] = 2; GyMask[2][2] = 1;
 
 	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
-	const int tileSize = 32;
+	const int tileSize = 64;
 
 	for (int tileRow = 1; tileRow < width - 1; tileRow += tileSize)
 		for (int tileCol = 1; tileCol < height - 1; tileCol += tileSize) {
@@ -1006,6 +1364,192 @@ void SobelParallelAvxRegblocking() {
 					g[row][col + i + size] = result2[i];
 				}
 					
+			}
+		}
+	}
+}
+
+void SobelParallelAvxRegBlocking2Tiled64() {
+	int i, j;
+	int row, col;
+	int rowOffset;
+	int colOffset;
+	int Gx;
+	int Gy;
+	float thisAngle;
+	int newAngle;
+	int newPixel;
+	int size = 8;
+	int tileSize = 64;
+
+	unsigned char temp;
+
+	/* Declare Sobel masks */
+
+	alignas(32) int gxMask[3][3] = {
+		{-1, 0, 1},
+		{-2, 0, 2},
+		{-1, 0, 1}
+	};
+
+	alignas(32) int gyMask[3][3] = {
+	{-1, -2, -1},
+	{0, 0, 0},
+	{1, 2, 1}
+	};
+
+	omp_set_num_threads(8);
+
+	/*---------------------------- Determine edge directions and gradient strengths -------------------------------------------*/
+#pragma omp parallel for private(row, col, rowOffset, colOffset, Gx, Gy, thisAngle, newAngle) shared(f, g, eD, GxMask, GyMask)
+	for (int tileRow = 1; tileRow < width - 1; tileRow += tileSize) {
+		for (int tileCol = 1; tileCol < height - 1; tileCol += tileSize) {
+
+			int rowEnd = (tileRow + tileSize < width - 1) ? tileRow + tileSize : width - 1;
+			int colEnd = (tileCol + tileSize < height - 1) ? tileCol + tileSize : height - 1;
+
+			for (row = tileRow; row < rowEnd; row++) {
+				for (col = tileCol; col < colEnd; col += 16) {
+					__m256i Gx = _mm256_setzero_si256();
+					__m256i Gy = _mm256_setzero_si256();
+					__m256i Gx2 = _mm256_setzero_si256();
+					__m256i Gy2 = _mm256_setzero_si256();
+					alignas(32) int tempPixels[8];
+					alignas(32) int tempPixels2[8];
+
+					for (int i = 0; i < 8; ++i)
+						if (col - 1 + i + size < width) {
+							tempPixels[i] = f[row - 1][col - 1 + i];
+							tempPixels2[i] = f[row - 1][col - 1 + i + size];
+						}
+
+
+					__m256i pixels = _mm256_load_si256((__m256i*)tempPixels);
+					__m256i pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					__m256i GxMask = _mm256_set1_epi32(gxMask[0][0]);
+					__m256i GyMask = _mm256_set1_epi32(gyMask[0][0]);
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+					Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+					Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col + i + size < width) {
+							tempPixels[i] = f[row - 1][col + i];
+							tempPixels2[i] = f[row - 1][col + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GyMask = _mm256_set1_epi32(gyMask[0][1]);
+					Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col + 1 + i + size < width) {
+							tempPixels[i] = f[row - 1][col + 1 + i];
+							tempPixels[i] = f[row - 1][col + 1 + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GxMask = _mm256_set1_epi32(gxMask[0][2]);
+					GyMask = _mm256_set1_epi32(gyMask[0][2]);
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+					Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+					Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col - 1 + i + size < width) {
+							tempPixels[i] = f[row][col - 1 + i];
+							tempPixels2[i] = f[row][col - 1 + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GxMask = _mm256_set1_epi32(gxMask[1][0]);
+					Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col + 1 + i + size < width) {
+							tempPixels[i] = f[row][col + 1 + i];
+							tempPixels2[i] = f[row][col + 1 + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GxMask = _mm256_set1_epi32(gxMask[1][2]);
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col - 1 + i + size < width) {
+							tempPixels[i] = f[row + 1][col - 1 + i];
+							tempPixels2[i] = f[row + 1][col - 1 + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GxMask = _mm256_set1_epi32(gxMask[2][0]);
+					GyMask = _mm256_set1_epi32(gyMask[2][0]);
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+					Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+					Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col + i + size < width) {
+							tempPixels[i] = f[row + 1][col + i];
+							tempPixels2[i] = f[row + 1][col + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GyMask = _mm256_set1_epi32(gyMask[2][1]);
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+					Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+					for (int i = 0; i < 8; ++i)
+						if (col + 1 + i + size < width) {
+							tempPixels[i] = f[row + 1][col + 1 + i];
+							tempPixels2[i] = f[row + 1][col + 1 + i + size];
+						}
+
+
+					pixels = _mm256_load_si256((__m256i*)tempPixels);
+					pixels2 = _mm256_load_si256((__m256i*)tempPixels2);
+					GxMask = _mm256_set1_epi32(gxMask[2][2]);
+					GyMask = _mm256_set1_epi32(gyMask[2][2]);
+					Gx = _mm256_add_epi32(Gx, _mm256_mullo_epi32(pixels, GxMask));
+					Gy = _mm256_add_epi32(Gy, _mm256_mullo_epi32(pixels, GyMask));
+					Gx2 = _mm256_add_epi32(Gx2, _mm256_mullo_epi32(pixels2, GxMask));
+					Gy2 = _mm256_add_epi32(Gy2, _mm256_mullo_epi32(pixels2, GyMask));
+
+
+					__m256i gradient = _mm256_add_epi32(_mm256_abs_epi32(Gx), _mm256_abs_epi32(Gy));
+					__m256i gradient2 = _mm256_add_epi32(_mm256_abs_epi32(Gx2), _mm256_abs_epi32(Gy2));
+
+					alignas(32) int result[8];
+					alignas(32) int result2[8];
+
+					_mm256_store_si256((__m256i*)result, gradient);
+					_mm256_store_si256((__m256i*)result2, gradient2);
+
+
+					for (int i = 0; i < 8; ++i) {
+						if (col + i + size < width) {
+							g[row][col + i] = result[i];
+							g[row][col + i + size] = result2[i];
+						}
+
+					}
+				}
 			}
 		}
 	}

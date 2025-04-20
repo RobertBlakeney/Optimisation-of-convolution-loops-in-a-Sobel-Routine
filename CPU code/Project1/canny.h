@@ -47,12 +47,14 @@ std::pair<int, int> openfile(const char *filename, FILE** finput);
 int getint(FILE *fp);
 
 void SobelUnroll();
-void SobelUnroll_2Factor_RegBlocking();
+void SobelUnroll_4Factor_RegBlocking();
+void SobelUnroll_8Factor_RegBlocking();
 void SobelTiling_32();
 void SobelAvx();
 void SobelParallel();
 void SobelParallelAvx();
 void SobelParallelAvxRegblocking();
+void SobelParallelAvxRegBlocking2Tiled64();
 
 
 //void printt(int tem, int i, int j, int max1, int max2);
