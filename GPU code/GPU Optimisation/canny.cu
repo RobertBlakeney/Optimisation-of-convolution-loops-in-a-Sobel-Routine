@@ -3,7 +3,6 @@ unsigned char gaussianMask[5][5];
 signed char GxMask[3][3], GyMask[3][3];
 int width, height = 0;
 float timeS = 0;
-int runs[] = { 5000, 1000, 500, 100, 10, 1 };
 float elapsedTime;
 
 
@@ -17,11 +16,11 @@ int main() {
 	for (int i = 0; i < 6; ++i) {
 		image_detection(inList, outListG, outListS, i);
 
-		long pixelS = runs[i] * ((width - 2) * (height - 2));
+		long pixelS = 4 * ((width - 2) * (height - 2));
 
-		cout << "\nTime: " << elapsedTime << endl;
+		cout << "\nTime: " << elapsedTime / 1000<< endl;
 
-		long float ppsS = pixelS /  (elapsedTime/4);
+		long float ppsS = pixelS /  (elapsedTime/1000);
 
 		cout << "\nPixels per second of sobel mask: " << ppsS << "\n" << endl;
 	}
