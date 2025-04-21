@@ -68,5 +68,5 @@ Nvidia Geforce 4080 Founders Edition
 
 ![graph3](Data/Graph-Images/paraavxregtile.png)
 
-![graph4]([Data/Graph-Images/GPU.png)
+![graph4](Data/Graph-Images/GPU.png)
 
