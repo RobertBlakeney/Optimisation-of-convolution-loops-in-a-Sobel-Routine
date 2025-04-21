@@ -70,3 +70,8 @@ Nvidia Geforce 4080 Founders Edition
 
 ![graph4](Data/Graph-Images/GPU.png)
 
+### Speedup table
+Show of percent gange in pixels per second
+
+![Speedup](Data/Graph-Images/SpeedupTable.png)
+
