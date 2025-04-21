@@ -62,11 +62,11 @@ Nvidia Geforce 4080 Founders Edition
 
 ## Results
 
-[graph1](Data/Graph-Images/origcomparison.png)
+![graph1](Data/Graph-Images/origcomparison.png)
 
-[graph2](Data/Graph-Images/paraavxreg2.png)
+![graph2](Data/Graph-Images/paraavxreg2.png)
 
-[graph3](Data/Graph-Images/paraavxregtile.png)
+![graph3](Data/Graph-Images/paraavxregtile.png)
 
-[graph4]([Data/Graph-Images/GPU.png](https://github.com/RobertBlakeney/Optimisation-of-convolution-loops-in-a-Sobel-Routine/blob/main/Data/Graph-Images/GPU.png))
+![graph4]([Data/Graph-Images/GPU.png](https://github.com/RobertBlakeney/Optimisation-of-convolution-loops-in-a-Sobel-Routine/blob/main/Data/Graph-Images/GPU.png))
 
